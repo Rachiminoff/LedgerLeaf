@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease-out;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.3s ease-out;
+}
+
+/* Custom Scrollbar for Modal Content */
+.modal-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #5CB85C #1A1A1A;
+}
+
+.modal-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-track {
+  background: #1A1A1A;
+  border-radius: 10px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb {
+  background: #5CB85C;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6FCF70;
+  box-shadow: 0 0 10px rgba(92, 184, 92, 0.3);
+}
+
+/* Modal Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease-out;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.3s ease-out;
+}
+
+/* Smooth scroll behavior */
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
