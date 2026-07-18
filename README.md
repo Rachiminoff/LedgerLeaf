@@ -1,59 +1,276 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<div align="center">
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+# 🌿 LedgerLeaf
 
-## About Laravel
+### Smart records. Clear future.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+A modern, responsive personal finance management web application developed as part of a technical activity for **GoodStrings Inc.**
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
+![PHP](https://img.shields.io/badge/PHP-8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
 
-## Learning Laravel
+</div>
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+# 📖 About
 
-## Laravel Sponsors
+LedgerLeaf is a modern finance management application that enables users to organize, allocate, and monitor their personal finances through an intuitive pocket-based budgeting system.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Designed with a clean dark interface and responsive user experience, the application emphasizes simplicity while providing powerful tools for budgeting, expense tracking, savings management, and financial planning.
 
-### Premium Partners
+This project was created as part of a technical assessment for **GoodStrings Inc.**
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+---
 
-## Contributing
+# ✨ Features
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- 🔐 Secure Authentication
+- 👤 User Profiles
+- 💰 Pocket-Based Budgeting
+- 💸 Expense Tracking
+- 📈 Budget Planner
+- 🏦 Savings Management
+- 📊 Financial Dashboard
+- 🔔 Notifications
+- 📱 Fully Responsive Design
+- 🌙 Modern Dark UI
+- ⚡ Fast SPA Experience
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# 🛠 Tech Stack
 
-## Security Vulnerabilities
+| Frontend | Backend | Database | Build Tools |
+|-----------|----------|----------|-------------|
+| React | Laravel | MySQL | Vite |
+| TypeScript | PHP | | npm |
+| Tailwind CSS | REST API | | |
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+# 📂 Project Structure
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```text
+LedgerLeaf/
+│
+├── backend/
+│   ├── app/
+│   ├── routes/
+│   ├── database/
+│   └── ...
+│
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │
+│   ├── assets/
+│   ├── components/
+│   ├── layouts/
+│   ├── pages/
+│   ├── services/
+│   ├── hooks/
+│   ├── types/
+│   └── utils/
+│
+├── README.md
+└── ...
+```
+
+---
+
+# 🚀 Getting Started
+
+## Clone the repository
+
+```bash
+git clone https://github.com/Rachiminoff/LedgerLeaf.git
+```
+
+```bash
+cd LedgerLeaf
+```
+
+---
+
+## Frontend
+
+Install dependencies
+
+```bash
+npm install
+```
+
+Start the development server
+
+```bash
+npm run dev
+```
+
+Build for production
+
+```bash
+npm run build
+```
+
+---
+
+## Backend
+
+Navigate to the backend directory
+
+```bash
+cd backend
+```
+
+Install PHP dependencies
+
+```bash
+composer install
+```
+
+Create your environment file
+
+```bash
+cp .env.example .env
+```
+
+Generate an application key
+
+```bash
+php artisan key:generate
+```
+
+Run database migrations
+
+```bash
+php artisan migrate
+```
+
+Start the Laravel development server
+
+```bash
+php artisan serve
+```
+
+---
+
+# 🎯 Core Modules
+
+## Dashboard
+
+- Financial overview
+- Pocket distribution
+- Budget health
+- Recent expenses
+- Spending statistics
+
+---
+
+## Budget Planner
+
+- Monthly budgets
+- Category allocations
+- Budget health
+- Spending forecasts
+- Budget insights
+
+---
+
+## Expenses
+
+- Add expenses
+- Edit expenses
+- Archive expenses
+- Transaction history
+- Receipt support
+
+---
+
+## Savings
+
+- Savings goals
+- Progress tracking
+- Deposits
+- Withdrawals
+
+---
+
+## Profile
+
+- User information
+- Account settings
+- Preferences
+- Security
+
+---
+
+# 🎨 Design
+
+LedgerLeaf follows a minimal dark interface inspired by modern fintech dashboards.
+
+### Color Palette
+
+| Color | Hex |
+|--------|-----|
+| Background | `#000000` |
+| Surface | `#111111` |
+| Primary | `#5CB85C` |
+| Secondary Text | `#9A9A9A` |
+| Border | `#242424` |
+
+---
+
+# 📱 Responsiveness
+
+The application is designed with a mobile-first approach and provides an optimized experience across:
+
+- 📱 Mobile Phones
+- 📲 Tablets
+- 💻 Laptops
+- 🖥 Desktop Displays
+
+---
+
+# 🔒 Planned Features
+
+- Email Verification
+- Password Recovery
+- Budget Templates
+- Smart Spending Insights
+- Financial Reports
+- Receipt Uploads
+- Export to PDF
+- Data Visualization
+- Notifications
+
+---
+
+# 🤝 Development
+
+This repository follows a component-based architecture with reusable UI components, responsive layouts, and a scalable project structure.
+
+---
+
+# 📄 License
+
+This repository was created solely for educational and technical assessment purposes.
+
+---
+
+<div align="center">
+
+### 🌿 LedgerLeaf
+
+**Smart records. Clear future.**
+
+Developed for the **GoodStrings Inc. Technical Activity**
+
+</div>
