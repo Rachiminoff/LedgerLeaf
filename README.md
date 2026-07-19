@@ -1,17 +1,19 @@
 <div align="center">
 
-# 🌿 LedgerLeaf
+# LedgerLeaf
 
-### Smart records. Clear future.
+### Pocket-Based Personal Finance Management System
 
-A modern, responsive personal finance management web application developed as part of a technical activity for **GoodStrings Inc.**
+**Smart records. Clear future.**
+
+A modern full-stack finance management application developed as part of the **GoodStrings Inc. Technical Assessment**.
 
 ---
 
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
 ![PHP](https://img.shields.io/badge/PHP-8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
@@ -20,257 +22,175 @@ A modern, responsive personal finance management web application developed as pa
 
 ---
 
-# 📖 About
+# About
 
-LedgerLeaf is a modern finance management application that enables users to organize, allocate, and monitor their personal finances through an intuitive pocket-based budgeting system.
+LedgerLeaf is a modern personal finance management application built around a **pocket-based budgeting system**. Instead of simply tracking expenses, the application encourages users to allocate funds into customizable pockets before spending, making budgeting more intentional and organized.
 
-Designed with a clean dark interface and responsive user experience, the application emphasizes simplicity while providing powerful tools for budgeting, expense tracking, savings management, and financial planning.
+Users can manage their finances through budgeting, expense tracking, savings management, and real-time financial summaries, all within a responsive interface optimized for desktop and mobile devices.
 
-This project was created as part of a technical assessment for **GoodStrings Inc.**
-
----
-
-# ✨ Features
-
-- 🔐 Secure Authentication
-- 👤 User Profiles
-- 💰 Pocket-Based Budgeting
-- 💸 Expense Tracking
-- 📈 Budget Planner
-- 🏦 Savings Management
-- 📊 Financial Dashboard
-- 🔔 Notifications
-- 📱 Fully Responsive Design
-- 🌙 Modern Dark UI
-- ⚡ Fast SPA Experience
+This project was developed as part of the **GoodStrings Inc. Technical Assessment**, demonstrating full-stack web development using React, Laravel, TypeScript, and MySQL.
 
 ---
 
-# 🛠 Tech Stack
+# Features
 
-| Frontend | Backend | Database | Build Tools |
-|-----------|----------|----------|-------------|
-| React | Laravel | MySQL | Vite |
-| TypeScript | PHP | | npm |
-| Tailwind CSS | REST API | | |
+### Authentication
+
+- User registration and login
+- Secure authentication
+- Session management
+- Protected routes
+
+### Dashboard
+
+- Financial overview
+- Safe Balance and Total Balance
+- Recent transactions
+- Budget health summary
+- Spending statistics
+
+### Pocket Management
+
+- Create, edit, archive, and delete pockets
+- Allocate available funds
+- Monitor pocket balances
+- Track remaining allocations
+
+### Budget Planner
+
+- Organize monthly budgets
+- Allocate funds across pockets
+- Reallocate budgets
+- View allocation summaries
+
+### Expense Management
+
+- Record expenses by pocket
+- Edit and delete transactions
+- Archive expenses
+- Filter transaction history
+
+### Savings
+
+- Deposit and withdraw savings
+- Track savings progress
+- Maintain savings history
+
+### Profile
+
+- Update account information
+- Change password
+- Export reports to PDF
+- Export reports to Excel
 
 ---
 
-# 📂 Project Structure
+# Core Concept
+
+LedgerLeaf follows a proactive budgeting workflow.
+
+```
+Available Funds
+        ↓
+ Allocate to Pockets
+        ↓
+ Record Expenses
+        ↓
+ Update Balances
+        ↓
+ View Financial Insights
+```
+
+Instead of asking **"Where did my money go?"**, LedgerLeaf encourages users to decide **"Where should my money go?"** before spending.
+
+---
+
+# Technology Stack
+
+| Category | Technologies |
+|-----------|--------------|
+| Frontend | React, TypeScript, Tailwind CSS |
+| Backend | Laravel, PHP |
+| Database | MySQL |
+| Build Tools | Vite, npm, Composer |
+
+---
+
+# Project Highlights
+
+This project demonstrates:
+
+- Full CRUD operations
+- RESTful API development
+- Responsive web design
+- Component-based architecture
+- Authentication and authorization
+- Relational database integration
+- Form validation
+- Financial data visualization
+- PDF and Excel export generation
+- Mobile-first development
+
+---
+
+# Project Structure
 
 ```text
 LedgerLeaf/
-│
 ├── backend/
-│   ├── app/
-│   ├── routes/
-│   ├── database/
-│   └── ...
-│
 ├── frontend/
-│   ├── public/
-│   ├── src/
-│   │
-│   ├── assets/
 │   ├── components/
 │   ├── layouts/
 │   ├── pages/
 │   ├── services/
 │   ├── hooks/
-│   ├── types/
-│   └── utils/
-│
+│   └── assets/
 ├── README.md
 └── ...
 ```
 
 ---
 
-# 🚀 Getting Started
+# Getting Started
 
-## Clone the repository
+## Clone
 
 ```bash
 git clone https://github.com/Rachiminoff/LedgerLeaf.git
-```
-
-```bash
 cd LedgerLeaf
 ```
 
----
-
 ## Frontend
-
-Install dependencies
 
 ```bash
 npm install
-```
-
-Start the development server
-
-```bash
 npm run dev
 ```
 
-Build for production
-
-```bash
-npm run build
-```
-
----
-
 ## Backend
-
-Navigate to the backend directory
-
-```bash
-cd backend
-```
-
-Install PHP dependencies
 
 ```bash
 composer install
-```
-
-Create your environment file
-
-```bash
 cp .env.example .env
-```
-
-Generate an application key
-
-```bash
 php artisan key:generate
-```
-
-Run database migrations
-
-```bash
 php artisan migrate
-```
-
-Start the Laravel development server
-
-```bash
 php artisan serve
 ```
 
 ---
 
-# 🎯 Core Modules
+# License
 
-## Dashboard
-
-- Financial overview
-- Pocket distribution
-- Budget health
-- Recent expenses
-- Spending statistics
-
----
-
-## Budget Planner
-
-- Monthly budgets
-- Category allocations
-- Budget health
-- Spending forecasts
-- Budget insights
-
----
-
-## Expenses
-
-- Add expenses
-- Edit expenses
-- Archive expenses
-- Transaction history
-- Receipt support
-
----
-
-## Savings
-
-- Savings goals
-- Progress tracking
-- Deposits
-- Withdrawals
-
----
-
-## Profile
-
-- User information
-- Account settings
-- Preferences
-- Security
-
----
-
-# 🎨 Design
-
-LedgerLeaf follows a minimal dark interface inspired by modern fintech dashboards.
-
-### Color Palette
-
-| Color | Hex |
-|--------|-----|
-| Background | `#000000` |
-| Surface | `#111111` |
-| Primary | `#5CB85C` |
-| Secondary Text | `#9A9A9A` |
-| Border | `#242424` |
-
----
-
-# 📱 Responsiveness
-
-The application is designed with a mobile-first approach and provides an optimized experience across:
-
-- 📱 Mobile Phones
-- 📲 Tablets
-- 💻 Laptops
-- 🖥 Desktop Displays
-
----
-
-# 🔒 Planned Features
-
-- Email Verification
-- Password Recovery
-- Budget Templates
-- Smart Spending Insights
-- Financial Reports
-- Receipt Uploads
-- Export to PDF
-- Data Visualization
-- Notifications
-
----
-
-# 🤝 Development
-
-This repository follows a component-based architecture with reusable UI components, responsive layouts, and a scalable project structure.
-
----
-
-# 📄 License
-
-This repository was created solely for educational and technical assessment purposes.
+This repository was created for the **GoodStrings Inc. Technical Assessment** and is intended to demonstrate modern full-stack web development practices.
 
 ---
 
 <div align="center">
 
-### 🌿 LedgerLeaf
+**LedgerLeaf**
 
-**Smart records. Clear future.**
+*Smart records. Clear future.*
 
-Developed for the **GoodStrings Inc. Technical Activity**
+Developed using React, Laravel, TypeScript, Tailwind CSS, and MySQL.
 
 </div>
