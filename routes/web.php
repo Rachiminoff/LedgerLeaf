@@ -10,6 +10,7 @@ use App\Http\Controllers\SavingsGoalController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\AnalyticsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -141,6 +142,11 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{goal}/add-funds', [SavingsGoalController::class, 'addFunds'])->name('addFunds');
         Route::post('/{goal}/complete', [SavingsGoalController::class, 'complete'])->name('complete');
         Route::post('/{goal}/withdraw', [SavingsGoalController::class, 'withdraw'])->name('withdraw');
+        
+        Route::patch('/{goal}/archive', [SavingsGoalController::class, 'archive'])->name('archive');
+        Route::patch('/{id}/restore', [SavingsGoalController::class, 'restore'])->name('restore');
+        
+        Route::get('/transactions', [SavingsGoalController::class, 'transactions'])->name('transactions');
     });
 
     // ─── Reports ──────────────────────────────────────────────────
@@ -151,6 +157,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/category', [ReportController::class, 'category'])->name('category');
         Route::get('/export/csv', [ReportController::class, 'exportCsv'])->name('export.csv');
         Route::get('/export/pdf', [ReportController::class, 'exportPdf'])->name('export.pdf');
+    });
+
+    // ─── Analytics ──────────────────────────────────────────────────
+    Route::prefix('analytics')->name('analytics.')->group(function () {
+        Route::get('/', [AnalyticsController::class, 'index'])->name('index');
     });
 
     // ─── Transactions ─────────────────────────────────────────────
@@ -185,6 +196,25 @@ Route::middleware(['auth'])->group(function () {
 
         // ─── Transactions ─────────────────────────────────────────────
         Route::get('/transactions', [TransactionController::class, 'apiIndex'])->name('transactions.index');
+
+        // ─── Savings Goals ────────────────────────────────────────────
+        Route::get('/savings-goals', [SavingsGoalController::class, 'index'])->name('savings-goals.index');
+        Route::post('/savings-goals', [SavingsGoalController::class, 'store'])->name('savings-goals.store');
+        Route::put('/savings-goals/{goal}', [SavingsGoalController::class, 'update'])->name('savings-goals.update');
+        Route::patch('/savings-goals/{goal}/archive', [SavingsGoalController::class, 'archive'])->name('savings-goals.archive');
+        Route::patch('/savings-goals/{id}/restore', [SavingsGoalController::class, 'restore'])->name('savings-goals.restore');
+        Route::delete('/savings-goals/{goal}', [SavingsGoalController::class, 'destroy'])->name('savings-goals.destroy');
+        Route::post('/savings-goals/{goal}/deposit', [SavingsGoalController::class, 'deposit'])->name('savings-goals.deposit');
+        Route::post('/savings-goals/{goal}/withdraw', [SavingsGoalController::class, 'withdraw'])->name('savings-goals.withdraw');
+        Route::get('/savings-goals/transactions', [SavingsGoalController::class, 'transactions'])->name('savings-goals.transactions');
+
+        // ─── Analytics ────────────────────────────────────────────────
+        Route::get('/analytics/data', [AnalyticsController::class, 'getData'])->name('analytics.data');
+        
+        // ─── Analytics Export ─────────────────────────────────────────
+        Route::get('/analytics/export/{format}', [AnalyticsController::class, 'export'])
+            ->name('analytics.export')
+            ->where('format', 'pdf|excel|csv');
     });
 });
 

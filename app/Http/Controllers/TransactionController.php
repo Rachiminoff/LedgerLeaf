@@ -35,7 +35,7 @@ class TransactionController extends Controller
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
 
-            // Get all audit logs (transactions)
+            // Get all audit logs for the authenticated user only
             $query = AuditLog::where('user_id', $user->id)
                 ->with(['user']);
 
@@ -115,9 +115,66 @@ class TransactionController extends Controller
                 ];
             });
 
+        // Get action categories for better grouping
+        $actionCategories = $this->getActionCategories();
+
         return [
             'total' => $total,
             'by_action' => $byAction,
+            'categories' => $actionCategories,
+        ];
+    }
+
+    /**
+     * Get action categories for filtering
+     */
+    private function getActionCategories()
+    {
+        return [
+            'pocket' => [
+                'label' => 'Pocket Actions',
+                'actions' => [
+                    'create_pocket',
+                    'update_pocket',
+                    'archive_pocket',
+                    'delete_pocket',
+                    'restore_pocket',
+                    'refund_pocket',
+                    'allocate_funds',
+                    'transfer_funds',
+                    'deduct_pocket',
+                ],
+            ],
+            'expense' => [
+                'label' => 'Expense Actions',
+                'actions' => [
+                    'create_expense',
+                    'update_expense',
+                    'delete_expense',
+                    'archive_expense',
+                    'restore_expense',
+                ],
+            ],
+            'savings' => [
+                'label' => 'Savings Actions',
+                'actions' => [
+                    'create_savings_goal',
+                    'update_savings_goal',
+                    'archive_savings_goal',
+                    'restore_savings_goal',
+                    'delete_savings_goal',
+                    'deposit_savings',
+                    'withdraw_savings',
+                ],
+            ],
+            'account' => [
+                'label' => 'Account Actions',
+                'actions' => [
+                    'deposit',
+                    'update_profile',
+                    'change_password',
+                ],
+            ],
         ];
     }
 

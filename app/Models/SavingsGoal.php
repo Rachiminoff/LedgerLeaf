@@ -1,5 +1,5 @@
-// app/Models/Pocket.php
 <?php
+// app/Models/SavingsGoal.php
 
 namespace App\Models;
 
@@ -8,75 +8,90 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Pocket extends Model
+class SavingsGoal extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'pockets';
+    protected $table = 'savings_goals';
 
     protected $fillable = [
         'user_id',
         'name',
+        'target_amount',
+        'current_amount',
+        'target_date',
         'description',
-        'icon',
-        'color',
-        'allocated',
-        'balance',
-        'spent',
-        'is_default',
-        'order',
+        'is_completed',
+        'completed_at',
         'is_archived',
     ];
 
     protected $casts = [
-        'allocated' => 'decimal:2',
-        'balance' => 'decimal:2',
-        'spent' => 'decimal:2',
-        'is_default' => 'boolean',
+        'target_amount' => 'decimal:2',
+        'current_amount' => 'decimal:2',
+        'is_completed' => 'boolean',
         'is_archived' => 'boolean',
+        'target_date' => 'date',
+        'completed_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
     protected $appends = [
-        'remaining',
-        'progress',
+        'progress_percentage',
+        'remaining_amount',
+        'is_achieved',
     ];
+
+    // ─── Relationships ─────────────────────────────────────────────
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function allocations(): HasMany
+    public function transactions(): HasMany
     {
-        return $this->hasMany(Allocation::class);
+        return $this->hasMany(SavingsTransaction::class);
     }
 
-    public function getRemainingAttribute(): float
-    {
-        return $this->allocated - $this->spent;
-    }
+    // ─── Accessors ──────────────────────────────────────────────────
 
-    public function getProgressAttribute(): float
+    public function getProgressPercentageAttribute(): float
     {
-        if ($this->allocated === 0) {
+        if ($this->target_amount <= 0) {
             return 0;
         }
-        return min(($this->spent / $this->allocated) * 100, 100);
+        return min(($this->current_amount / $this->target_amount) * 100, 100);
     }
 
-    public function deductBalance(float $amount): void
+    public function getRemainingAmountAttribute(): float
     {
-        $this->balance -= $amount;
-        $this->spent += $amount;
-        $this->save();
+        return max($this->target_amount - $this->current_amount, 0);
     }
 
-    public function addBalance(float $amount): void
+    public function getIsAchievedAttribute(): bool
     {
-        $this->balance += $amount;
-        $this->allocated += $amount;
-        $this->save();
+        return $this->current_amount >= $this->target_amount;
     }
+
+    public function getFormattedTargetAttribute(): string
+    {
+        return number_format($this->target_amount, 2);
+    }
+
+    public function getFormattedCurrentAttribute(): string
+    {
+        return number_format($this->current_amount, 2);
+    }
+
+    public function getFormattedRemainingAttribute(): string
+    {
+        return number_format($this->remaining_amount, 2);
+    }
+
+    // ─── Scopes ─────────────────────────────────────────────────────
 
     public function scopeActive($query)
     {
@@ -86,5 +101,96 @@ class Pocket extends Model
     public function scopeArchived($query)
     {
         return $query->where('is_archived', true);
+    }
+
+    public function scopeCompleted($query)
+    {
+        return $query->where('is_completed', true);
+    }
+
+    public function scopeInProgress($query)
+    {
+        return $query->where('is_completed', false)
+            ->where('current_amount', '>', 0);
+    }
+
+    public function scopeNotStarted($query)
+    {
+        return $query->where('is_completed', false)
+            ->where('current_amount', '=', 0);
+    }
+
+    // ─── Helper Methods ────────────────────────────────────────────
+
+    public function deposit(float $amount, string $notes = null): bool
+    {
+        if ($amount <= 0) {
+            return false;
+        }
+
+        if ($this->is_archived) {
+            return false;
+        }
+
+        if ($this->is_completed) {
+            return false;
+        }
+
+        $this->current_amount += $amount;
+
+        if ($this->current_amount >= $this->target_amount) {
+            $this->is_completed = true;
+            $this->completed_at = now();
+        }
+
+        return $this->save();
+    }
+
+    public function withdraw(float $amount, string $notes = null): bool
+    {
+        if ($amount <= 0) {
+            return false;
+        }
+
+        if ($this->is_archived) {
+            return false;
+        }
+
+        if ($amount > $this->current_amount) {
+            return false;
+        }
+
+        $this->current_amount -= $amount;
+
+        if ($this->is_completed && $this->current_amount < $this->target_amount) {
+            $this->is_completed = false;
+            $this->completed_at = null;
+        }
+
+        return $this->save();
+    }
+
+    public function complete(): bool
+    {
+        if ($this->is_archived) {
+            return false;
+        }
+
+        $this->is_completed = true;
+        $this->completed_at = now();
+
+        return $this->save();
+    }
+
+    public function archive(): bool
+    {
+        $this->is_archived = true;
+        return $this->save();
+    }
+
+    public function restore(): bool
+    {
+        $this->is_archived = false;
+        return $this->save();
     }
 }
