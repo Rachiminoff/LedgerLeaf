@@ -1,4 +1,5 @@
 import { Eye, Pencil, Archive, Trash2, MoreHorizontal } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { useState } from 'react';
 
 interface ExpenseTableProps {
@@ -22,12 +23,52 @@ export default function ExpenseTable({ expenses, onView, onEdit, onArchive, onDe
     };
 
     const formatDate = (date: string) => {
-        return new Date(date).toLocaleDateString('en-PH', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-        });
+        if (!date) return 'No date';
+        try {
+            return new Date(date).toLocaleDateString('en-PH', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+            });
+        } catch {
+            return 'Invalid date';
+        }
     };
+
+    const getPocketDisplay = (pocket: any) => {
+        if (!pocket) return 'No pocket';
+        if (pocket.icon) {
+            return (
+                <span className="flex items-center gap-1.5">
+                    <Icon icon={pocket.icon} className="w-4 h-4" />
+                    <span>{pocket.name}</span>
+                </span>
+            );
+        }
+        return pocket.name || 'No pocket';
+    };
+
+    const handleArchive = (id: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (onArchive) {
+            onArchive(id);
+        }
+    };
+
+    const handleDelete = (id: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (onDelete) {
+            onDelete(id);
+        }
+    };
+
+    if (expenses.length === 0) {
+        return (
+            <div className="bg-[#111111] border border-[#242424] rounded-xl p-12 text-center">
+                <div className="text-[#9A9A9A] text-sm">No expenses found</div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-[#111111] border border-[#242424] rounded-xl overflow-hidden">
@@ -35,9 +76,6 @@ export default function ExpenseTable({ expenses, onView, onEdit, onArchive, onDe
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-[#242424]">
-                            <th className="px-4 py-3 text-left text-xs font-medium text-[#9A9A9A] uppercase tracking-wider">
-                                Category
-                            </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-[#9A9A9A] uppercase tracking-wider">
                                 Description
                             </th>
@@ -63,27 +101,19 @@ export default function ExpenseTable({ expenses, onView, onEdit, onArchive, onDe
                                 onClick={() => onView(expense)}
                             >
                                 <td className="px-4 py-3">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xl">{expense.category?.icon || '📄'}</span>
-                                        <span className="text-sm text-white">
-                                            {expense.category?.name || 'Uncategorized'}
-                                        </span>
-                                    </div>
-                                </td>
-                                <td className="px-4 py-3">
-                                    <span className="text-sm text-white">{expense.description}</span>
+                                    <span className="text-sm text-white">{expense.description || 'No description'}</span>
                                     {expense.merchant && (
                                         <span className="text-xs text-[#9A9A9A] block">{expense.merchant}</span>
                                     )}
                                 </td>
                                 <td className="px-4 py-3">
                                     <span className="text-sm text-[#9A9A9A]">
-                                        {expense.pocket?.icon} {expense.pocket?.name}
+                                        {getPocketDisplay(expense.pocket)}
                                     </span>
                                 </td>
                                 <td className="px-4 py-3 text-right">
                                     <span className="text-sm font-medium text-[#FF5A5A]">
-                                        {formatCurrency(expense.amount)}
+                                        {formatCurrency(expense.amount || 0)}
                                     </span>
                                 </td>
                                 <td className="px-4 py-3">
@@ -108,14 +138,14 @@ export default function ExpenseTable({ expenses, onView, onEdit, onArchive, onDe
                                             <Pencil className="w-4 h-4 text-[#9A9A9A] hover:text-white" />
                                         </button>
                                         <button
-                                            onClick={(e) => { e.stopPropagation(); onArchive(expense.id); }}
+                                            onClick={(e) => handleArchive(expense.id, e)}
                                             className="p-1 rounded hover:bg-[#242424] transition-colors"
                                             title="Archive"
                                         >
                                             <Archive className="w-4 h-4 text-[#9A9A9A] hover:text-white" />
                                         </button>
                                         <button
-                                            onClick={(e) => { e.stopPropagation(); onDelete(expense.id); }}
+                                            onClick={(e) => handleDelete(expense.id, e)}
                                             className="p-1 rounded hover:bg-[#242424] transition-colors"
                                             title="Delete"
                                         >

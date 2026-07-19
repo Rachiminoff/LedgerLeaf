@@ -24,6 +24,10 @@ class DashboardController extends Controller
             ->where('id', $user->id)
             ->value('safe_balance') ?? 0;
 
+        /**
+         * TOTAL BALANCE = Safe Balance + Allocated to Pockets
+         * This is the total money the user has
+         */
         $totalBalance = \DB::table('users')
             ->where('id', $user->id)
             ->value('total_balance') ?? 0;
@@ -32,12 +36,22 @@ class DashboardController extends Controller
         if ($totalBalance == 0) {
             $totalBalance = \DB::table('transactions')
                 ->where('user_id', $user->id)
-                ->selectRaw('SUM(CASE WHEN type = "income" THEN amount WHEN type = "expense" THEN -amount WHEN type = "deposit" THEN amount ELSE 0 END) as total')
-                ->value('total') ?? 0;
+                ->where('type', 'income')
+                ->sum('amount') ?? 0;
+
+            // Update the user's total_balance
+            \DB::table('users')
+                ->where('id', $user->id)
+                ->update([
+                    'total_balance' => $totalBalance,
+                    'updated_at' => now(),
+                ]);
         }
 
         // Get allocated to pockets
-        $allocatedToPockets = Pocket::where('user_id', $user->id)->sum('current_amount') ?? 0;
+        $allocatedToPockets = Pocket::where('user_id', $user->id)->sum('allocated') ?? 0;
+        $spentFromPockets = Pocket::where('user_id', $user->id)->sum('spent') ?? 0;
+        $remainingInPockets = $allocatedToPockets - $spentFromPockets;
 
         // Monthly spending
         $monthlySpending = Transaction::where('user_id', $user->id)
@@ -121,10 +135,29 @@ class DashboardController extends Controller
             'pending_transactions' => (int) $pendingTransactions,
         ];
 
+        // Build budget summary (matches what BudgetController returns)
+        $totalPockets = Pocket::where('user_id', $user->id)->whereNull('deleted_at')->count();
+        $budgetHealth = $allocatedToPockets > 0 ? ($remainingInPockets / $allocatedToPockets) * 100 : 100;
+
+        $summary = [
+            'safe_balance' => (float) $safeBalance,
+            'allocated_balance' => (float) $allocatedToPockets,
+            'remaining_balance' => (float) $remainingInPockets,
+            'monthly_budget' => (float) $allocatedToPockets,
+            'total_pockets' => (int) $totalPockets,
+            'budget_health' => min(max($budgetHealth, 0), 100),
+            'budget_health_label' => $this->getHealthLabel($budgetHealth),
+        ];
+
         // Debug log
         \Log::info('Dashboard data:', [
             'user_id' => $user->id,
+            'safe_balance' => $safeBalance,
+            'total_balance' => $totalBalance,
+            'allocated_to_pockets' => $allocatedToPockets,
+            'spent_from_pockets' => $spentFromPockets,
             'stats' => $stats,
+            'summary' => $summary,
         ]);
 
         return Inertia::render('Dashboard', [
@@ -132,12 +165,22 @@ class DashboardController extends Controller
                 'user' => $user,
             ],
             'stats' => $stats,
+            'summary' => $summary,
             'recentActivities' => $recentActivities,
             'budgetCategories' => $budgetCategories,
             'notifications' => $notifications,
             'timeline' => $timeline,
             'insights' => $this->generateInsights($user),
         ]);
+    }
+
+    private function getHealthLabel(float $health): string
+    {
+        if ($health >= 90) return 'Excellent';
+        if ($health >= 70) return 'Good';
+        if ($health >= 50) return 'Fair';
+        if ($health >= 30) return 'Needs Attention';
+        return 'Critical';
     }
 
     private function generateInsights($user)
@@ -173,6 +216,20 @@ class DashboardController extends Controller
                 'id' => count($insights) + 1,
                 'message' => "You have ₱" . number_format($safeBalance, 2) . " in safe balance. Consider allocating to pockets!",
                 'icon' => 'mdi:wallet',
+                'type' => 'positive',
+            ];
+        }
+
+        // Total balance insight
+        $totalBalance = \DB::table('users')
+            ->where('id', $user->id)
+            ->value('total_balance') ?? 0;
+
+        if ($totalBalance > 0) {
+            $insights[] = [
+                'id' => count($insights) + 1,
+                'message' => "Your total balance is ₱" . number_format($totalBalance, 2) . ". Keep up the good work!",
+                'icon' => 'mdi:chart-line',
                 'type' => 'positive',
             ];
         }

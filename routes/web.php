@@ -9,6 +9,7 @@ use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\SavingsGoalController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -36,6 +37,24 @@ Route::get('/register', function () {
     return redirect()->route('signup');
 })->name('register');
 
+// ─── Forgot Password Routes ─────────────────────────────────────
+
+Route::get('/forgot-password', function () {
+    return Inertia::render('Auth/ForgotPassword');
+})->middleware('guest')->name('password.request');
+
+Route::post('/forgot-password', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'store'])
+    ->middleware('guest')
+    ->name('password.email');
+
+Route::get('/reset-password/{token}', function ($token) {
+    return Inertia::render('Auth/ResetPassword', ['token' => $token]);
+})->middleware('guest')->name('password.reset');
+
+Route::post('/reset-password', [App\Http\Controllers\Auth\NewPasswordController::class, 'store'])
+    ->middleware('guest')
+    ->name('password.update');
+
 // ─── Protected Routes ──────────────────────────────────────────
 
 Route::middleware(['auth'])->group(function () {
@@ -52,7 +71,12 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // ─── Categories (Pockets from Wais Wallet) ────────────────
+    // ─── Budget Planner ────────────────────────────────────────
+    Route::get('/budget', function () {
+        return Inertia::render('Budget/Index');
+    })->name('budget');
+
+    // ─── Categories ─────────────────────────────────────────────
     Route::prefix('categories')->name('categories.')->group(function () {
         Route::get('/', [CategoryController::class, 'index'])->name('index');
         Route::get('/create', [CategoryController::class, 'create'])->name('create');
@@ -78,7 +102,6 @@ Route::middleware(['auth'])->group(function () {
 
     // ─── Expenses ────────────────────────────────────────────────
     Route::prefix('expenses')->name('expenses.')->group(function () {
-        // Main CRUD
         Route::get('/', [ExpenseController::class, 'index'])->name('index');
         Route::get('/create', [ExpenseController::class, 'create'])->name('create');
         Route::post('/', [ExpenseController::class, 'store'])->name('store');
@@ -87,11 +110,9 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/{expense}', [ExpenseController::class, 'update'])->name('update');
         Route::delete('/{expense}', [ExpenseController::class, 'destroy'])->name('destroy');
         
-        // Archive & Restore
         Route::patch('/{expense}/archive', [ExpenseController::class, 'archive'])->name('archive');
         Route::patch('/{expense}/restore', [ExpenseController::class, 'restore'])->name('restore');
         
-        // Export
         Route::get('/export', [ExpenseController::class, 'export'])->name('export');
         Route::get('/statistics', [ExpenseController::class, 'statistics'])->name('statistics');
     });
@@ -117,7 +138,6 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/{goal}', [SavingsGoalController::class, 'update'])->name('update');
         Route::delete('/{goal}', [SavingsGoalController::class, 'destroy'])->name('destroy');
         
-        // Goal Actions
         Route::post('/{goal}/add-funds', [SavingsGoalController::class, 'addFunds'])->name('addFunds');
         Route::post('/{goal}/complete', [SavingsGoalController::class, 'complete'])->name('complete');
         Route::post('/{goal}/withdraw', [SavingsGoalController::class, 'withdraw'])->name('withdraw');
@@ -131,6 +151,40 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/category', [ReportController::class, 'category'])->name('category');
         Route::get('/export/csv', [ReportController::class, 'exportCsv'])->name('export.csv');
         Route::get('/export/pdf', [ReportController::class, 'exportPdf'])->name('export.pdf');
+    });
+
+    // ─── Transactions ─────────────────────────────────────────────
+    Route::prefix('transactions')->name('transactions.')->group(function () {
+        Route::get('/', [TransactionController::class, 'index'])->name('index');
+    });
+
+    // ─── API Routes (Inertia calls these) ────────────────────────
+    Route::prefix('api')->name('api.')->group(function () {
+        // ─── Budget ──────────────────────────────────────────────────
+        Route::get('/budget/data', [BudgetController::class, 'getData'])->name('budget.data');
+        Route::post('/budget/allocate', [BudgetController::class, 'allocate'])->name('budget.allocate');
+        Route::post('/budget/transfer', [BudgetController::class, 'transfer'])->name('budget.transfer');
+        
+        // ─── Pockets ─────────────────────────────────────────────────
+        Route::get('/pockets', [PocketController::class, 'index'])->name('pockets.index');
+        Route::post('/pockets', [PocketController::class, 'store'])->name('pockets.store');
+        Route::put('/pockets/{pocket}', [PocketController::class, 'update'])->name('pockets.update');
+        Route::patch('/pockets/{pocket}/archive', [PocketController::class, 'archive'])->name('pockets.archive');
+        Route::patch('/pockets/{id}/restore', [PocketController::class, 'restore'])->name('pockets.restore');
+        Route::delete('/pockets/{pocket}', [PocketController::class, 'destroy'])->name('pockets.destroy');
+        Route::post('/pockets/deduct', [PocketController::class, 'deduct'])->name('pockets.deduct');
+        Route::post('/pockets/refund', [PocketController::class, 'refund'])->name('pockets.refund');
+        
+        // ─── Expenses ─────────────────────────────────────────────────
+        Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+        Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+        Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update');
+        Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
+        Route::patch('/expenses/{expense}/archive', [ExpenseController::class, 'archive'])->name('expenses.archive');
+        Route::patch('/expenses/{expense}/restore', [ExpenseController::class, 'restore'])->name('expenses.restore');
+
+        // ─── Transactions ─────────────────────────────────────────────
+        Route::get('/transactions', [TransactionController::class, 'apiIndex'])->name('transactions.index');
     });
 });
 

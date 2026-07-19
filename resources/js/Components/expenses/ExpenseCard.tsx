@@ -1,4 +1,5 @@
-import { Eye, Pencil, Archive, Trash2, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { Eye, Pencil, Archive, Trash2, MoreVertical, ChevronRight } from 'lucide-react';
 
 interface ExpenseCardProps {
     expense: any;
@@ -9,6 +10,8 @@ interface ExpenseCardProps {
 }
 
 export default function ExpenseCard({ expense, onView, onEdit, onArchive, onDelete }: ExpenseCardProps) {
+    const [showMenu, setShowMenu] = useState(false);
+
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-PH', {
             style: 'currency',
@@ -26,23 +29,23 @@ export default function ExpenseCard({ expense, onView, onEdit, onArchive, onDele
     };
 
     return (
-        <div className="bg-[#111111] border border-[#242424] rounded-xl p-4 hover:border-[#5CB85C] transition-all">
+        <div className="bg-[#111111] border border-[#242424] rounded-xl p-4 transition-all hover:border-[#5CB85C] relative">
             {/* Header */}
             <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#171717] flex items-center justify-center text-xl">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-10 h-10 rounded-lg bg-[#171717] flex items-center justify-center text-xl flex-shrink-0">
                         {expense.category?.icon || '📄'}
                     </div>
-                    <div>
-                        <p className="text-sm font-medium text-white">{expense.description}</p>
+                    <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-white truncate">{expense.description}</p>
                         <div className="flex items-center gap-2 text-xs text-[#9A9A9A]">
-                            <span>{expense.category?.name}</span>
+                            <span className="truncate">{expense.category?.name}</span>
                             <span>•</span>
-                            <span>{formatDate(expense.expense_date)}</span>
+                            <span className="whitespace-nowrap">{formatDate(expense.expense_date)}</span>
                         </div>
                     </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right flex-shrink-0 ml-4">
                     <p className="text-sm font-medium text-[#FF5A5A]">
                         {formatCurrency(expense.amount)}
                     </p>
@@ -52,38 +55,66 @@ export default function ExpenseCard({ expense, onView, onEdit, onArchive, onDele
                 </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-[#242424]">
+            {/* Actions - Dropdown Menu */}
+            <div className="flex items-center justify-end mt-3 pt-3 border-t border-[#242424]">
                 <button
                     onClick={() => onView(expense)}
-                    className="p-1.5 rounded hover:bg-[#242424] transition-colors"
+                    className="flex items-center gap-1 text-xs text-[#9A9A9A] hover:text-white transition-colors mr-auto"
                 >
-                    <Eye className="w-4 h-4 text-[#9A9A9A] hover:text-white" />
+                    <Eye className="w-3.5 h-3.5" />
+                    View
                 </button>
-                <button
-                    onClick={() => onEdit(expense)}
-                    className="p-1.5 rounded hover:bg-[#242424] transition-colors"
-                >
-                    <Pencil className="w-4 h-4 text-[#9A9A9A] hover:text-white" />
-                </button>
-                <button
-                    onClick={() => onArchive(expense.id)}
-                    className="p-1.5 rounded hover:bg-[#242424] transition-colors"
-                >
-                    <Archive className="w-4 h-4 text-[#9A9A9A] hover:text-white" />
-                </button>
-                <button
-                    onClick={() => onDelete(expense.id)}
-                    className="p-1.5 rounded hover:bg-[#242424] transition-colors"
-                >
-                    <Trash2 className="w-4 h-4 text-[#9A9A9A] hover:text-[#FF5A5A]" />
-                </button>
-                <button
-                    onClick={() => onView(expense)}
-                    className="p-1.5 rounded hover:bg-[#242424] transition-colors ml-auto"
-                >
-                    <ChevronRight className="w-4 h-4 text-[#9A9A9A] hover:text-white" />
-                </button>
+                
+                <div className="relative">
+                    <button
+                        onClick={() => setShowMenu(!showMenu)}
+                        className="p-1.5 rounded hover:bg-[#242424] transition-colors"
+                        aria-label="More options"
+                    >
+                        <MoreVertical className="w-4 h-4 text-[#9A9A9A]" />
+                    </button>
+                    
+                    {showMenu && (
+                        <>
+                            <div 
+                                className="fixed inset-0 z-10" 
+                                onClick={() => setShowMenu(false)}
+                            />
+                            <div className="absolute right-0 mt-1 w-48 bg-[#171717] border border-[#242424] rounded-lg shadow-xl z-20 py-1">
+                                <button
+                                    onClick={() => {
+                                        onEdit(expense);
+                                        setShowMenu(false);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-sm text-[#9A9A9A] hover:text-white hover:bg-[#242424] transition-colors flex items-center gap-2"
+                                >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                    Edit
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        onArchive(expense.id);
+                                        setShowMenu(false);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-sm text-[#9A9A9A] hover:text-white hover:bg-[#242424] transition-colors flex items-center gap-2"
+                                >
+                                    <Archive className="w-3.5 h-3.5" />
+                                    Archive
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        onDelete(expense.id);
+                                        setShowMenu(false);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-sm text-[#FF5A5A] hover:bg-[#242424] transition-colors flex items-center gap-2"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    Delete
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
         </div>
     );

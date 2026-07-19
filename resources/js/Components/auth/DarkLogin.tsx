@@ -1,3 +1,4 @@
+// resources/js/Components/Auth/DarkLogin.tsx
 import React, { useState } from 'react'
 import { useForm } from '@inertiajs/react'
 import { Icon } from '@iconify/react'
@@ -36,7 +37,6 @@ export const DarkLogin: React.FC<DarkLoginProps> = ({
 
     setTouched({ email: true, password: true })
 
-    // Client-side validation for better UX
     if (!data.email || !validateEmail(data.email) || !data.password || data.password.length < 6) {
       return
     }
@@ -46,7 +46,6 @@ export const DarkLogin: React.FC<DarkLoginProps> = ({
         reset('password')
       },
       onError: () => {
-        // Reset password field on error
         setData('password', '')
       },
     })
@@ -108,6 +107,7 @@ export const DarkLogin: React.FC<DarkLoginProps> = ({
           </label>
           <button
             type="button"
+            onClick={() => window.location.href = route('password.request')}
             className="text-xs sm:text-sm text-[#5CB85C] hover:text-[#6FCF70] transition-all duration-200 hover:underline underline-offset-2 font-medium"
           >
             Forgot password?
@@ -157,17 +157,43 @@ export const DarkLogin: React.FC<DarkLoginProps> = ({
         )}
       </div>
 
-      {/* Remember Me */}
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="remember"
-          checked={data.remember}
-          onChange={(e) => setData('remember', e.target.checked)}
-          disabled={processing}
-          className="w-4 h-4 bg-[#1A1A1A] border-[#242424] rounded focus:ring-2 focus:ring-[#5CB85C] focus:ring-offset-2 focus:ring-offset-[#111111] text-[#5CB85C] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-        />
-        <label htmlFor="remember" className="text-xs sm:text-sm text-[#9A9A9A] cursor-pointer">
+      {/* Custom Checkbox - Remember Me */}
+      <div className="flex items-center gap-2.5 group">
+        <label className="relative flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            id="remember"
+            checked={data.remember}
+            onChange={(e) => setData('remember', e.target.checked)}
+            disabled={processing}
+            className="sr-only peer"
+          />
+          <div className={`
+            w-5 h-5 rounded-md border-2 flex items-center justify-center
+            transition-all duration-200 ease-in-out
+            ${data.remember
+              ? 'bg-[#5CB85C] border-[#5CB85C]'
+              : 'bg-[#1A1A1A] border-[#242424] group-hover:border-[#5CB85C]'
+            }
+            ${processing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+          `}>
+            {data.remember && (
+              <Icon
+                icon="mdi:check"
+                className="w-3.5 h-3.5 text-black transition-all duration-200"
+              />
+            )}
+          </div>
+        </label>
+        <label
+          htmlFor="remember"
+          className={`
+            text-xs sm:text-sm text-[#9A9A9A] cursor-pointer
+            transition-colors duration-200
+            group-hover:text-[#F8F8F8]
+            ${processing ? 'opacity-50 cursor-not-allowed' : ''}
+          `}
+        >
           Remember me
         </label>
       </div>

@@ -14,6 +14,23 @@ interface ExpenseSummaryCardsProps {
 }
 
 export default function ExpenseSummaryCards({ summary, loading }: ExpenseSummaryCardsProps) {
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('en-PH', {
+            style: 'currency',
+            currency: 'PHP',
+            minimumFractionDigits: 2,
+        }).format(amount);
+    };
+
+    // Calculate average daily if not provided
+    const calculateAverageDaily = () => {
+        if (summary?.average_daily) return summary.average_daily;
+        if (summary?.this_month && summary?.days_in_month) {
+            return summary.this_month / summary.days_in_month;
+        }
+        return 0;
+    };
+
     const cards = [
         {
             id: 'today',
@@ -42,7 +59,7 @@ export default function ExpenseSummaryCards({ summary, loading }: ExpenseSummary
         {
             id: 'average',
             label: 'Average Daily',
-            value: summary?.average_daily || 0,
+            value: calculateAverageDaily(),
             icon: DollarSign,
             color: '#F59E0B',
         },
@@ -54,14 +71,6 @@ export default function ExpenseSummaryCards({ summary, loading }: ExpenseSummary
             color: '#EF4444',
         },
     ];
-
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-PH', {
-            style: 'currency',
-            currency: 'PHP',
-            minimumFractionDigits: 2,
-        }).format(amount);
-    };
 
     if (loading) {
         return (
@@ -76,11 +85,15 @@ export default function ExpenseSummaryCards({ summary, loading }: ExpenseSummary
         );
     }
 
+    // Check if there's any data
+    const hasData = cards.some(card => card.value > 0);
+
     return (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
             {cards.map((card) => {
                 const Icon = card.icon;
                 const isPositive = card.trend > 0;
+                const hasTrend = card.trend !== 0 && card.trend !== undefined;
                 
                 return (
                     <div
@@ -93,19 +106,23 @@ export default function ExpenseSummaryCards({ summary, loading }: ExpenseSummary
                         />
                         
                         <div className="flex items-start justify-between">
-                            <div>
+                            <div className="flex-1 min-w-0">
                                 <p className="text-xs text-[#9A9A9A] font-medium uppercase tracking-wider">
                                     {card.label}
                                 </p>
-                                <p className="text-xl font-bold text-white mt-1.5 font-mono">
-                                    {formatCurrency(card.value)}
+                                <p className={`text-xl font-bold text-white mt-1.5 font-mono truncate ${
+                                    card.id === 'largest' && card.value === 0 ? 'text-[#9A9A9A]' : ''
+                                }`}>
+                                    {card.value === 0 && card.id === 'largest' 
+                                        ? '—' 
+                                        : formatCurrency(card.value)}
                                 </p>
-                                {card.trend !== 0 && (
-                                    <div className="flex items-center gap-1 mt-1.5">
+                                {hasTrend && (
+                                    <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                                         {isPositive ? (
-                                            <TrendingUp className="w-3.5 h-3.5 text-[#5CB85C]" />
+                                            <TrendingUp className="w-3.5 h-3.5 text-[#5CB85C] flex-shrink-0" />
                                         ) : (
-                                            <TrendingDown className="w-3.5 h-3.5 text-[#FF5A5A]" />
+                                            <TrendingDown className="w-3.5 h-3.5 text-[#FF5A5A] flex-shrink-0" />
                                         )}
                                         <span className={`text-xs font-medium ${
                                             isPositive ? 'text-[#5CB85C]' : 'text-[#FF5A5A]'
@@ -117,12 +134,33 @@ export default function ExpenseSummaryCards({ summary, loading }: ExpenseSummary
                                 )}
                             </div>
                             <div 
-                                className="p-2 rounded-lg bg-[#171717] group-hover:scale-110 transition-transform duration-200"
+                                className={`p-2 rounded-lg bg-[#171717] group-hover:scale-110 transition-transform duration-200 flex-shrink-0 ml-2 ${
+                                    card.value === 0 ? 'opacity-50' : ''
+                                }`}
                                 style={{ color: card.color }}
                             >
                                 <Icon className="w-4 h-4" />
                             </div>
                         </div>
+
+                        {/* Progress indicator for month card */}
+                        {card.id === 'month' && summary?.monthly_budget && summary.monthly_budget > 0 && (
+                            <div className="mt-3">
+                                <div className="flex justify-between text-[10px] text-[#9A9A9A]">
+                                    <span>Budget: {formatCurrency(summary.monthly_budget)}</span>
+                                    <span>{Math.min((card.value / summary.monthly_budget) * 100, 100).toFixed(0)}%</span>
+                                </div>
+                                <div className="w-full h-1 bg-[#242424] rounded-full mt-1 overflow-hidden">
+                                    <div
+                                        className="h-full rounded-full transition-all duration-500"
+                                        style={{
+                                            width: `${Math.min((card.value / summary.monthly_budget) * 100, 100)}%`,
+                                            backgroundColor: card.value > summary.monthly_budget ? '#FF5A5A' : card.color,
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
                 );
             })}

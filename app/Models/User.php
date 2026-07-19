@@ -68,6 +68,12 @@ class User extends Authenticatable
         'total_expenses',
         'total_income',
         'net_balance',
+        'formatted_net_balance',
+        'total_allocated_to_pockets',
+        'total_spent_from_pockets',
+        'total_remaining_in_pockets',
+        'initials',
+        'display_name',
     ];
 
     // ─── Relationships ─────────────────────────────────────────────
@@ -102,6 +108,14 @@ class User extends Authenticatable
     public function pockets(): HasMany
     {
         return $this->hasMany(Pocket::class);
+    }
+
+    /**
+     * Get all allocations for the user.
+     */
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(Allocation::class);
     }
 
     /**
@@ -239,8 +253,6 @@ class User extends Authenticatable
         return $this->total_allocated_to_pockets - $this->total_spent_from_pockets;
     }
 
-    // ─── Helper Methods ────────────────────────────────────────────
-
     /**
      * Get the user's initials.
      */
@@ -261,6 +273,8 @@ class User extends Authenticatable
     {
         return $this->name ?? $this->email;
     }
+
+    // ─── Helper Methods ────────────────────────────────────────────
 
     /**
      * Check if user has sufficient balance.
@@ -287,6 +301,106 @@ class User extends Authenticatable
         $this->total_balance = $totalIncome;
         $this->safe_balance = $totalIncome - $totalExpenses;
         $this->save();
+    }
+
+    /**
+     * Get budget summary.
+     */
+    public function getBudgetSummary(): array
+    {
+        $pockets = $this->pockets()->whereNull('deleted_at')->get();
+        
+        $totalAllocated = $pockets->sum('allocated');
+        $totalSpent = $pockets->sum('spent');
+        $totalRemaining = $totalAllocated - $totalSpent;
+
+        // Calculate budget health
+        $health = $totalAllocated > 0 ? ($totalRemaining / $totalAllocated) * 100 : 0;
+
+        return [
+            'safe_balance' => $this->safe_balance ?? 0,
+            'allocated_balance' => $totalAllocated,
+            'remaining_balance' => $totalRemaining,
+            'monthly_budget' => $totalAllocated,
+            'total_pockets' => $pockets->count(),
+            'budget_health' => min(max($health, 0), 100),
+            'budget_health_label' => $this->getHealthLabel($health),
+        ];
+    }
+
+    /**
+     * Get budget health label.
+     */
+    private function getHealthLabel(float $health): string
+    {
+        if ($health >= 90) return 'Excellent';
+        if ($health >= 70) return 'Good';
+        if ($health >= 50) return 'Fair';
+        if ($health >= 30) return 'Needs Attention';
+        return 'Critical';
+    }
+
+    /**
+     * Get budget insights.
+     */
+    public function getBudgetInsights(): array
+    {
+        $insights = [];
+        $pockets = $this->pockets()->whereNull('deleted_at')->get();
+
+        // Find pockets near limit
+        $nearLimit = $pockets->filter(function ($p) {
+            return $p->allocated > 0 && ($p->spent / $p->allocated) >= 0.8 && ($p->spent / $p->allocated) < 1;
+        });
+
+        foreach ($nearLimit as $pocket) {
+            $insights[] = [
+                'id' => 'near_limit_' . $pocket->id,
+                'type' => 'warning',
+                'title' => "{$pocket->name} is near its limit",
+                'description' => "Used " . round(($pocket->spent / $pocket->allocated) * 100) . "% of its budget.",
+            ];
+        }
+
+        // Find over budget
+        $overBudget = $pockets->filter(function ($p) {
+            return $p->spent > $p->allocated;
+        });
+
+        foreach ($overBudget as $pocket) {
+            $insights[] = [
+                'id' => 'over_budget_' . $pocket->id,
+                'type' => 'critical',
+                'title' => "{$pocket->name} is over budget",
+                'description' => "Exceeded by ₱" . number_format($pocket->spent - $pocket->allocated, 2),
+            ];
+        }
+
+        // Check if user has enough safe balance
+        if (($this->safe_balance ?? 0) > 1000) {
+            $insights[] = [
+                'id' => 'safe_balance_positive',
+                'type' => 'positive',
+                'title' => 'You have unallocated funds',
+                'description' => "Your safe balance of ₱" . number_format($this->safe_balance, 2) . " is ready to allocate.",
+            ];
+        }
+
+        // Check for empty pockets
+        $emptyPockets = $pockets->filter(function ($p) {
+            return $p->allocated == 0;
+        });
+
+        if ($emptyPockets->count() > 0) {
+            $insights[] = [
+                'id' => 'empty_pockets',
+                'type' => 'neutral',
+                'title' => 'Some pockets have no budget',
+                'description' => $emptyPockets->count() . " pocket(s) have no allocated budget.",
+            ];
+        }
+
+        return $insights;
     }
 
     /**
@@ -429,12 +543,12 @@ class User extends Authenticatable
         static::created(function (User $user) {
             // Create default pockets for new user
             $defaultPockets = [
-                ['name' => 'Rent', 'icon' => '🏠', 'color' => '#EF4444'],
-                ['name' => 'Groceries', 'icon' => '🛒', 'color' => '#10B981'],
-                ['name' => 'Utilities', 'icon' => '💡', 'color' => '#F59E0B'],
-                ['name' => 'Transportation', 'icon' => '🚗', 'color' => '#3B82F6'],
-                ['name' => 'Entertainment', 'icon' => '🎮', 'color' => '#8B5CF6'],
-                ['name' => 'Savings', 'icon' => '💰', 'color' => '#06B6D4'],
+                ['name' => 'Rent', 'icon' => 'mdi:home', 'color' => '#EF4444'],
+                ['name' => 'Groceries', 'icon' => 'mdi:cart', 'color' => '#10B981'],
+                ['name' => 'Utilities', 'icon' => 'mdi:lightbulb', 'color' => '#F59E0B'],
+                ['name' => 'Transportation', 'icon' => 'mdi:car', 'color' => '#3B82F6'],
+                ['name' => 'Entertainment', 'icon' => 'mdi:gamepad', 'color' => '#8B5CF6'],
+                ['name' => 'Savings', 'icon' => 'mdi:bank', 'color' => '#06B6D4'],
             ];
 
             foreach ($defaultPockets as $index => $pocketData) {
@@ -444,19 +558,22 @@ class User extends Authenticatable
                     'color' => $pocketData['color'],
                     'is_default' => true,
                     'order' => $index,
+                    'allocated' => 0,
+                    'balance' => 0,
+                    'spent' => 0,
                 ]);
             }
 
             // Create default categories
             $defaultCategories = [
-                ['name' => 'Food & Dining', 'icon' => '🍽️', 'color' => '#10B981', 'type' => 'expense'],
-                ['name' => 'Shopping', 'icon' => '🛍️', 'color' => '#8B5CF6', 'type' => 'expense'],
-                ['name' => 'Transport', 'icon' => '🚗', 'color' => '#3B82F6', 'type' => 'expense'],
-                ['name' => 'Bills & Utilities', 'icon' => '📄', 'color' => '#F59E0B', 'type' => 'expense'],
-                ['name' => 'Healthcare', 'icon' => '🏥', 'color' => '#EC4899', 'type' => 'expense'],
-                ['name' => 'Education', 'icon' => '📚', 'color' => '#06B6D4', 'type' => 'expense'],
-                ['name' => 'Salary', 'icon' => '💰', 'color' => '#10B981', 'type' => 'income'],
-                ['name' => 'Freelance', 'icon' => '💻', 'color' => '#8B5CF6', 'type' => 'income'],
+                ['name' => 'Food & Dining', 'icon' => 'mdi:food', 'color' => '#10B981', 'type' => 'expense'],
+                ['name' => 'Shopping', 'icon' => 'mdi:shopping', 'color' => '#8B5CF6', 'type' => 'expense'],
+                ['name' => 'Transport', 'icon' => 'mdi:car', 'color' => '#3B82F6', 'type' => 'expense'],
+                ['name' => 'Bills & Utilities', 'icon' => 'mdi:file-document', 'color' => '#F59E0B', 'type' => 'expense'],
+                ['name' => 'Healthcare', 'icon' => 'mdi:heart-pulse', 'color' => '#EC4899', 'type' => 'expense'],
+                ['name' => 'Education', 'icon' => 'mdi:school', 'color' => '#06B6D4', 'type' => 'expense'],
+                ['name' => 'Salary', 'icon' => 'mdi:cash', 'color' => '#10B981', 'type' => 'income'],
+                ['name' => 'Freelance', 'icon' => 'mdi:laptop', 'color' => '#8B5CF6', 'type' => 'income'],
             ];
 
             foreach ($defaultCategories as $categoryData) {
@@ -485,6 +602,7 @@ class User extends Authenticatable
             $user->transactions()->delete();
             $user->budgets()->delete();
             $user->savingsGoals()->delete();
+            $user->allocations()->delete();
         });
     }
 }

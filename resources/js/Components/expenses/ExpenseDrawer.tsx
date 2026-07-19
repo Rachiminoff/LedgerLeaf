@@ -1,6 +1,8 @@
+// resources/js/Components/expenses/ExpenseDrawer.tsx
 import { Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { X, Eye, Pencil, Archive, Trash2 } from 'lucide-react';
+import { X, Pencil } from 'lucide-react';
+import { Icon } from '@iconify/react';
 
 interface ExpenseDrawerProps {
     isOpen: boolean;
@@ -9,7 +11,12 @@ interface ExpenseDrawerProps {
     onEdit: (expense: any) => void;
 }
 
-export default function ExpenseDrawer({ isOpen, onClose, expense, onEdit }: ExpenseDrawerProps) {
+export default function ExpenseDrawer({ 
+    isOpen, 
+    onClose, 
+    expense, 
+    onEdit
+}: ExpenseDrawerProps) {
     if (!expense) return null;
 
     const formatCurrency = (amount: number) => {
@@ -21,11 +28,29 @@ export default function ExpenseDrawer({ isOpen, onClose, expense, onEdit }: Expe
     };
 
     const formatDate = (date: string) => {
-        return new Date(date).toLocaleDateString('en-PH', {
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-        });
+        if (!date) return 'No date';
+        try {
+            return new Date(date).toLocaleDateString('en-PH', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+            });
+        } catch {
+            return 'Invalid date';
+        }
+    };
+
+    const getPocketDisplay = (pocket: any) => {
+        if (!pocket) return 'No pocket';
+        if (pocket.icon) {
+            return (
+                <span className="flex items-center gap-1.5">
+                    <Icon icon={pocket.icon} className="w-4 h-4" />
+                    <span>{pocket.name}</span>
+                </span>
+            );
+        }
+        return pocket.name || 'No pocket';
     };
 
     return (
@@ -68,27 +93,24 @@ export default function ExpenseDrawer({ isOpen, onClose, expense, onEdit }: Expe
                                         </div>
 
                                         <div className="flex-1 p-6 space-y-6">
-                                            {/* Category & Amount */}
+                                            {/* Amount */}
                                             <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-4xl">{expense.category?.icon || '📄'}</span>
-                                                    <div>
-                                                        <p className="text-sm text-[#9A9A9A]">Category</p>
-                                                        <p className="text-white font-medium">{expense.category?.name || 'Uncategorized'}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
+                                                <div>
                                                     <p className="text-sm text-[#9A9A9A]">Amount</p>
-                                                    <p className="text-xl font-bold text-[#FF5A5A]">
+                                                    <p className="text-2xl font-bold text-[#FF5A5A]">
                                                         {formatCurrency(expense.amount)}
                                                     </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm text-[#9A9A9A]">Date</p>
+                                                    <p className="text-white font-medium">{formatDate(expense.expense_date)}</p>
                                                 </div>
                                             </div>
 
                                             {/* Description */}
                                             <div>
                                                 <p className="text-sm text-[#9A9A9A]">Description</p>
-                                                <p className="text-white">{expense.description}</p>
+                                                <p className="text-white">{expense.description || 'No description'}</p>
                                             </div>
 
                                             {/* Merchant */}
@@ -103,15 +125,9 @@ export default function ExpenseDrawer({ isOpen, onClose, expense, onEdit }: Expe
                                             {expense.pocket && (
                                                 <div>
                                                     <p className="text-sm text-[#9A9A9A]">Pocket</p>
-                                                    <p className="text-white">{expense.pocket.icon} {expense.pocket.name}</p>
+                                                    <p className="text-white">{getPocketDisplay(expense.pocket)}</p>
                                                 </div>
                                             )}
-
-                                            {/* Date */}
-                                            <div>
-                                                <p className="text-sm text-[#9A9A9A]">Date</p>
-                                                <p className="text-white">{formatDate(expense.expense_date)}</p>
-                                            </div>
 
                                             {/* Payment Method */}
                                             {expense.payment_method && (
@@ -129,7 +145,7 @@ export default function ExpenseDrawer({ isOpen, onClose, expense, onEdit }: Expe
                                                 </div>
                                             )}
 
-                                            {/* Actions */}
+                                            {/* Actions - Only Edit Button */}
                                             <div className="flex gap-3 pt-4 border-t border-[#242424]">
                                                 <button
                                                     onClick={() => onEdit(expense)}
@@ -137,20 +153,6 @@ export default function ExpenseDrawer({ isOpen, onClose, expense, onEdit }: Expe
                                                 >
                                                     <Pencil className="w-4 h-4" />
                                                     Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => {}}
-                                                    className="flex items-center gap-2 px-4 py-2 border border-[#242424] text-[#9A9A9A] rounded-lg hover:border-white transition-colors"
-                                                >
-                                                    <Archive className="w-4 h-4" />
-                                                    Archive
-                                                </button>
-                                                <button
-                                                    onClick={() => {}}
-                                                    className="flex items-center gap-2 px-4 py-2 border border-[#FF5A5A]/30 text-[#FF5A5A] rounded-lg hover:bg-[#FF5A5A]/10 transition-colors"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                    Delete
                                                 </button>
                                             </div>
                                         </div>

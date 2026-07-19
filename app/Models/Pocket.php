@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Pocket extends Model
 {
-    use HasFactory;
+    use SoftDeletes;
+
+    protected $table = 'pockets';
 
     protected $fillable = [
         'user_id',
@@ -15,15 +17,20 @@ class Pocket extends Model
         'description',
         'icon',
         'color',
-        'target_amount',
-        'current_amount',
-        'is_active',
+        'allocated',
+        'balance',
+        'spent',
+        'is_default',
+        'order',
+        'is_archived',
     ];
 
     protected $casts = [
-        'target_amount' => 'decimal:2',
-        'current_amount' => 'decimal:2',
-        'is_active' => 'boolean',
+        'allocated' => 'decimal:2',
+        'balance' => 'decimal:2',
+        'spent' => 'decimal:2',
+        'is_default' => 'boolean',
+        'is_archived' => 'boolean',
     ];
 
     public function user()
@@ -31,18 +38,8 @@ class Pocket extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function transactions()
-    {
-        return $this->hasMany(Transaction::class);
-    }
-
     public function allocations()
     {
-        return $this->hasMany(PocketAllocation::class);
-    }
-
-    public function savingsGoals()
-    {
-        return $this->hasMany(SavingsGoal::class);
+        return $this->hasMany(Allocation::class);
     }
 }

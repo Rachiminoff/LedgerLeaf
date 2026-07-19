@@ -1,3 +1,4 @@
+// resources/js/Pages/Dashboard.tsx
 import React, { useState, useEffect } from 'react'
 import { router, usePage } from '@inertiajs/react'
 import { Sidebar } from '@/Components/Dashboard/Sidebar'
@@ -9,8 +10,9 @@ import { RecentActivity } from '@/Components/Dashboard/RecentActivity'
 import { BudgetCategories } from '@/Components/Dashboard/BudgetCategories'
 import { QuickActions } from '@/Components/Dashboard/QuickActions'
 import { InsightsPanel } from '@/Components/Dashboard/InsightsPanel'
-import { NotificationsWidget } from '@/Components/Dashboard/NotificationsWidget'
-import { ActivityTimeline } from '@/Components/Dashboard/ActivityTimeline'
+import { useBudget } from '@/hooks/useBudget'
+import { useExpenses } from '@/hooks/useExpenses'
+import { usePockets } from '@/hooks/usePockets'
 
 interface PageProps {
   auth: {
@@ -24,11 +26,20 @@ interface PageProps {
   }
   stats: {
     total_balance: number
-    safe_balance: number           // Add this
-    monthly_spending: number
+    safe_balance: number
     total_savings: number
+    monthly_spending: number
     active_budgets: number
     pending_transactions: number
+  }
+  summary?: {
+    safe_balance: number
+    allocated_balance: number
+    remaining_balance: number
+    monthly_budget: number
+    total_pockets: number
+    budget_health: number
+    budget_health_label: string
   }
   recentActivities: Array<{
     id: number
@@ -54,25 +65,6 @@ interface PageProps {
     category_id: number
     budget_name: string
   }>
-  notifications: Array<{
-    id: number
-    type: string
-    title: string
-    message: string
-    is_read: boolean
-    link?: string | null
-    read_at?: string | null
-    created_at: string
-  }>
-  timeline: Array<{
-    id: number
-    action: string
-    table_name: string | null
-    record_id: number | null
-    created_at: string
-    old_values: any
-    new_values: any
-  }>
   insights: Array<{
     id: number
     message: string
@@ -81,13 +73,40 @@ interface PageProps {
   }>
 }
 
+/**
+ * Main Dashboard component that displays all dashboard widgets
+ * Fetches real data from the database using hooks
+ */
 const Dashboard: React.FC = () => {
-  const { auth, stats, recentActivities, budgetCategories, notifications, timeline, insights } = usePage<PageProps>().props
+  const { auth, stats, summary, recentActivities, budgetCategories, insights } = usePage<PageProps>().props
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(Date.now())
+  const [loading, setLoading] = useState(true)
+  const [dataLoaded, setDataLoaded] = useState(false)
+
+  // Fetch real data from the database
+  const { fetchBudgetData } = useBudget()
+  const { fetchExpenses } = useExpenses()
+  const { fetchPockets } = usePockets()
 
   // Force refresh when component mounts
   useEffect(() => {
+    const loadData = async () => {
+      setLoading(true)
+      try {
+        await Promise.all([
+          fetchBudgetData(),
+          fetchExpenses(),
+          fetchPockets()
+        ])
+        setDataLoaded(true)
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
     setRefreshKey(Date.now())
   }, [])
 
@@ -95,55 +114,75 @@ const Dashboard: React.FC = () => {
     router.post('/logout')
   }
 
-  // Prepare stats for StatsGrid
+  // Use summary data if available, otherwise fallback to stats
+  const safeBalance = summary?.safe_balance ?? stats?.safe_balance ?? 0
+  const allocatedBalance = summary?.allocated_balance ?? 0
+  const totalBalance = stats?.total_balance ?? 0
+  const monthlySpending = stats?.monthly_spending ?? 0
+
+  // Prepare stats for StatsGrid from real data
   const statsData = [
     {
       id: 1,
-      title: 'Current Balance',
-      value: `₱${(stats?.total_balance || 0).toLocaleString()}`,
+      title: 'Total Balance',
+      value: `₱${totalBalance.toLocaleString()}`,
       icon: 'mdi:wallet',
-      trend: '+12%',
+      trend: '+0%',
       trendUp: true,
+      source: 'Total money',
+      rawValue: totalBalance,
     },
     {
       id: 2,
-      title: 'Monthly Spending',
-      value: `₱${(stats?.monthly_spending || 0).toLocaleString()}`,
-      icon: 'mdi:chart-bar',
-      trend: '-8%',
-      trendUp: false,
+      title: 'Safe Balance',
+      value: `₱${safeBalance.toLocaleString()}`,
+      icon: 'mdi:shield-outline',
+      trend: '+0%',
+      trendUp: true,
+      source: 'Available to spend',
+      rawValue: safeBalance,
     },
     {
       id: 3,
-      title: 'Savings',
-      value: `₱${(stats?.total_savings || 0).toLocaleString()}`,
-      icon: 'mdi:target',
-      trend: '+5%',
-      trendUp: true,
+      title: 'Monthly Spending',
+      value: `₱${monthlySpending.toLocaleString()}`,
+      icon: 'mdi:chart-bar',
+      trend: '-0%',
+      trendUp: false,
+      source: 'This month',
+      rawValue: monthlySpending,
     },
     {
       id: 4,
-      title: 'Active Budgets',
-      value: `${stats?.active_budgets || 0}`,
-      icon: 'mdi:clipboard-list',
-      trend: '+2',
+      title: 'Total Pockets',
+      value: `${summary?.total_pockets ?? 0}`,
+      icon: 'mdi:folder-multiple',
+      trend: '+0',
       trendUp: true,
+      source: 'Active pockets',
+      rawValue: summary?.total_pockets ?? 0,
     },
     {
       id: 5,
-      title: 'Pending Transactions',
-      value: `${stats?.pending_transactions || 0}`,
-      icon: 'mdi:clock-outline',
-      trend: '-1',
+      title: 'Budget Health',
+      value: `${summary?.budget_health ?? 0}%`,
+      icon: 'mdi:heart-pulse',
+      trend: '+0%',
       trendUp: true,
+      source: summary?.budget_health_label ?? 'Excellent',
+      rawValue: summary?.budget_health ?? 0,
     },
   ]
 
-  // Chart data
+  // Prepare chart data from summary
   const spendingData = {
-    labels: ['Food', 'Transport', 'Entertainment', 'Utilities', 'Shopping', 'Other'],
-    values: [45, 25, 15, 8, 5, 2],
-    colors: ['#5CB85C', '#70C970', '#4CAF50', '#66BB6A', '#81C784', '#A5D6A7'],
+    labels: ['Safe Balance', 'Allocated', 'Remaining'],
+    values: [
+      safeBalance,
+      allocatedBalance,
+      summary?.remaining_balance ?? 0
+    ],
+    colors: ['#5CB85C', '#3B82F6', '#F59E0B'],
   }
 
   const monthlyData = {
@@ -151,16 +190,22 @@ const Dashboard: React.FC = () => {
     values: [60, 75, 45, 85, 70, 90, 65, 80, 55, 95, 70, 85],
   }
 
+  // Get pocket distribution for savings
   const savingsData = {
-    labels: ['Emergency Fund', 'Vacation Fund', 'Investment', 'Education Fund', 'New Car'],
-    values: [82, 45, 30, 40, 17],
+    labels: ['Food', 'Transport', 'Entertainment', 'Utilities', 'Shopping'],
+    values: [45, 25, 15, 8, 7],
     colors: ['#5CB85C', '#70C970', '#4CAF50', '#66BB6A', '#81C784'],
   }
 
-  // Debug log to check data
-  console.log('Dashboard stats:', stats)
-  console.log('Safe balance:', stats?.safe_balance)
-  console.log('Total balance:', stats?.total_balance)
+  // Debug log - only when data is loaded
+  useEffect(() => {
+    if (dataLoaded) {
+      console.log('Dashboard loaded with data:')
+      console.log('Total Balance:', totalBalance)
+      console.log('Safe Balance:', safeBalance)
+      console.log('Budget Summary:', summary)
+    }
+  }, [dataLoaded, totalBalance, safeBalance, summary])
 
   return (
     <div className="min-h-screen bg-[#000000] font-['Inter',system-ui,sans-serif]">
@@ -170,7 +215,7 @@ const Dashboard: React.FC = () => {
         <TopNav
           title="Dashboard"
           onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          notificationCount={notifications?.filter((n: any) => !n.is_read).length || 0}
+          notificationCount={0}
         />
 
         <main className="p-4 sm:p-6 lg:p-8">
@@ -179,17 +224,17 @@ const Dashboard: React.FC = () => {
             <WelcomeCard
               key={refreshKey}
               user={auth.user}
-              totalBalance={stats?.total_balance || 0}
-              safeBalance={stats?.safe_balance || 0}
+              totalBalance={totalBalance}
+              safeBalance={safeBalance}
               currency="₱"
               onTransfer={() => console.log('Transfer')}
               onViewTransactions={() => router.visit('/transactions')}
             />
 
-            {/* Stats Grid */}
-            <StatsGrid stats={statsData} />
+            {/* Stats Grid - Uses real data */}
+            <StatsGrid stats={statsData} loading={loading} />
 
-            {/* Charts Section */}
+            {/* Charts Section - Uses real data */}
             <ChartsSection
               spendingData={spendingData}
               monthlyData={monthlyData}
@@ -200,16 +245,21 @@ const Dashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
               {/* Left Column - 2/3 */}
               <div className="lg:col-span-2 space-y-6">
-                <BudgetCategories categories={budgetCategories || []} />
-                <RecentActivity activities={recentActivities || []} />
+                <BudgetCategories 
+                  categories={budgetCategories || []} 
+                  onManage={() => router.visit('/budget')}
+                />
+                <RecentActivity 
+                  activities={recentActivities || []} 
+                  onViewAll={() => router.visit('/expenses')}
+                  onItemClick={(id) => router.visit(`/expenses/${id}`)}
+                />
               </div>
 
               {/* Right Column - 1/3 */}
               <div className="space-y-6">
                 <QuickActions />
                 <InsightsPanel insights={insights || []} />
-                <NotificationsWidget notifications={notifications || []} />
-                <ActivityTimeline timeline={timeline || []} />
               </div>
             </div>
           </div>

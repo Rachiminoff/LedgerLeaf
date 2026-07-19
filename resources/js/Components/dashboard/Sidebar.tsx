@@ -23,7 +23,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onLogout }) => {
     // Map page IDs to actual routes
     const routes: Record<string, string> = {
       dashboard: '/dashboard',
-      budget: '/budgets',
+      budget: '/budget',           
       expenses: '/expenses',
       savings: '/savings-goals',
       analytics: '/reports',
