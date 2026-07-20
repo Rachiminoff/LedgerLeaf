@@ -47,12 +47,6 @@ RUN npm install
 # Build frontend assets
 RUN npm run build
 
-# Clear Laravel caches
-RUN php artisan config:clear || true
-RUN php artisan route:clear || true
-RUN php artisan view:clear || true
-RUN php artisan cache:clear || true
-
 # Railway provides the PORT environment variable
 EXPOSE 8000
 
