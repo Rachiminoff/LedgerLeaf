@@ -33,7 +33,8 @@ export const DarkSignup: React.FC<DarkSignupProps> = ({
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
   const [generalError, setGeneralError] = useState<string | null>(null)
 
-  const { data, setData, post, processing, errors, reset, clearErrors } = useForm<SignupFormData>({
+  // Only destructure what we actually use
+  const { data, setData, post, processing, errors } = useForm<SignupFormData>({
     name: '',
     email: '',
     password: '',
@@ -72,7 +73,6 @@ export const DarkSignup: React.FC<DarkSignupProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setGeneralError(null)
-    clearErrors()
 
     // Mark all fields as touched
     setTouched({
@@ -112,12 +112,15 @@ export const DarkSignup: React.FC<DarkSignupProps> = ({
     post(route('register'), {
       preserveScroll: true,
       onSuccess: () => {
-        reset('password', 'password_confirmation')
         setGeneralError(null)
+        // Reset password fields on success
+        setData('password', '')
+        setData('password_confirmation', '')
       },
       onError: (error) => {
         console.log('Registration errors:', error) // Debug: Log errors to console
-        reset('password', 'password_confirmation')
+        setData('password', '')
+        setData('password_confirmation', '')
         
         // Handle specific error messages
         if (error.email) {

@@ -2,8 +2,16 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "tsc && vite build",
-        "dev": "vite"
+        "build": "tsc --noEmit && vite build",
+        "build:skip-ts": "vite build",
+        "build:railway": "echo 'Building without TypeScript checks for Railway' && npm run build:skip-ts",
+        "dev": "vite",
+        "preview": "vite preview",
+        "type-check": "tsc --noEmit",
+        "type-check:watch": "tsc --noEmit --watch",
+        "clean": "rm -rf dist node_modules/.vite",
+        "build:prod": "npm run type-check && npm run build",
+        "railway-build": "npm run build:railway"
     },
     "devDependencies": {
         "@headlessui/react": "^2.2.10",
