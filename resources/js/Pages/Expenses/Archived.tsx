@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
-import { Sidebar } from '@/Components/Dashboard/Sidebar';
-import { TopNav } from '@/Components/Dashboard/TopNav';
+import { Sidebar } from '@/Components/dashboard/Sidebar';
+import { TopNav } from '@/Components/dashboard/TopNav';
 import { Icon } from '@iconify/react';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useMediaQuery } from '@/hooks/useMediaQuery';

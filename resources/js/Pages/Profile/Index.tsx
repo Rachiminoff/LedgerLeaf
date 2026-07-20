@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { usePage, router } from '@inertiajs/react';
 import { toastSuccess, toastError, toastWarning } from '@/Components/ui/Toast';
-import { Sidebar } from '@/Components/Dashboard/Sidebar';
-import { TopNav } from '@/Components/Dashboard/TopNav';
+import { Sidebar } from '@/Components/dashboard/Sidebar';
+import { TopNav } from '@/Components/dashboard/TopNav';
 import ProfileCard from '@/Components/Profile/ProfileCard';
 import FinancialOverview from '@/Components/Profile/FinancialOverview';
 import ProfileInformation from '@/Components/Profile/ProfileInformation';

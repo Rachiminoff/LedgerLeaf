@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Head, router } from '@inertiajs/react';
-import { Sidebar } from '@/Components/Dashboard/Sidebar';
-import { TopNav } from '@/Components/Dashboard/TopNav';
+import { Sidebar } from '@/Components/dashboard/Sidebar';
+import { TopNav } from '@/Components/dashboard/TopNav';
 import HelpHeader from '@/Components/Help/HelpHeader';
 import HelpSearch from '@/Components/Help/HelpSearch';
 import AboutSection from '@/Components/Help/AboutSection';
