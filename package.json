@@ -1,38 +1,62 @@
 {
-    "$schema": "https://www.schemastore.org/package.json",
-    "private": true,
-    "type": "module",
+    "name": "laravel/laravel",
+    "type": "project",
+    "description": "The Laravel Framework.",
+    "keywords": ["framework", "laravel"],
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^11.0",
+        "laravel/tinker": "^2.9",
+        "inertiajs/inertia-laravel": "^1.0",
+        "tightenco/ziggy": "^2.0",
+        "laravel/sanctum": "^4.0",
+        "laravel/sail": "^1.26",
+        "openspout/openspout": "^4.28",
+        "spatie/simple-excel": "^3.7"
+    },
+    "require-dev": {
+        "fakerphp/faker": "^1.23",
+        "laravel/pint": "^1.13",
+        "laravel/sail": "^1.26",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.0",
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
     "scripts": {
-        "build": "tsc && vite build",
-        "dev": "vite"
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+        ]
     },
-    "devDependencies": {
-        "@headlessui/react": "^2.2.10",
-        "@inertiajs/react": "^2.0.0",
-        "@tailwindcss/forms": "^0.5.3",
-        "@tailwindcss/vite": "^4.3.3",
-        "@types/node": "^26.1.1",
-        "@types/react": "^18.0.28",
-        "@types/react-dom": "^18.0.10",
-        "@vitejs/plugin-react": "^4.2.0",
-        "axios": "^1.18.1",
-        "concurrently": "^9.0.1",
-        "laravel-vite-plugin": "^2.0.0",
-        "postcss": "^8.4.31",
-        "react": "^18.2.0",
-        "react-dom": "^18.2.0",
-        "tailwindcss": "^4.3.3",
-        "typescript": "^5.0.2",
-        "vite": "^7.0.7"
+    "config": {
+        "platform": {
+            "php": "8.2",
+            "ext-zip": "1.21.0"
+        },
+        "optimize-autoloader": true,
+        "sort-packages": true,
+        "preferred-install": "dist",
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
     },
-    "dependencies": {
-        "@iconify/react": "^6.0.2",
-        "chart.js": "^4.5.1",
-        "clsx": "^2.1.1",
-        "date-fns": "^4.4.0",
-        "lucide-react": "^1.25.0",
-        "react-chartjs-2": "^5.3.1",
-        "react-hot-toast": "^2.6.0",
-        "tailwind-merge": "^3.6.0"
-    }
+    "minimum-stability": "stable",
+    "prefer-stable": true
 }
