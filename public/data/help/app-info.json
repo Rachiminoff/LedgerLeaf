@@ -1,0 +1,44 @@
+{
+  "applicationName": "LedgerLeaf",
+  "version": "1.0.0",
+  "developer": "Rachiminoff",
+  "description": "LedgerLeaf is a modern full-stack personal finance management application built around a pocket-based budgeting philosophy. Designed for both desktop and mobile devices, it helps users organize their finances through budgeting pockets, expense tracking, savings management, and insightful financial analytics.",
+  "project": {
+    "type": "Web Application",
+    "category": "Personal Finance Management",
+    "purpose": "Technical Activity for GoodStrings Inc."
+  },
+  "technologies": {
+    "frontend": [
+      "React 19",
+      "TypeScript",
+      "Inertia.js",
+      "Tailwind CSS",
+      "Vite"
+    ],
+    "backend": [
+      "Laravel 12",
+      "PHP"
+    ],
+    "database": [
+      "MySQL"
+    ]
+  },
+  "features": [
+    "Pocket-Based Budgeting",
+    "Expense Tracking",
+    "Savings Management",
+    "Budget Planning",
+    "Financial Analytics",
+    "PDF & Spreadsheet Export",
+    "Responsive Desktop & Mobile Experience"
+  ],
+  "platforms": [
+    "Desktop",
+    "Tablet",
+    "Mobile"
+  ],
+  "lastUpdated": "July 20, 2026",
+  "repository": "https://github.com/Rachiminoff/LedgerLeaf",
+  "license": "Educational / Technical Assessment"
+}

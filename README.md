@@ -6,7 +6,7 @@
 
 **Smart records. Clear future.**
 
-A modern full-stack finance management application developed as part of the **GoodStrings Inc. Technical Assessment**.
+A modern full-stack web application for budgeting, expense tracking, savings management, and financial analytics. Developed as part of the **GoodStrings Inc. Technical Assessment**.
 
 ---
 
@@ -24,84 +24,121 @@ A modern full-stack finance management application developed as part of the **Go
 
 # About
 
-LedgerLeaf is a modern personal finance management application built around a **pocket-based budgeting system**. Instead of simply tracking expenses, the application encourages users to allocate funds into customizable pockets before spending, making budgeting more intentional and organized.
+LedgerLeaf is a modern **full-stack personal finance management system** built around a **pocket-based budgeting philosophy**. Rather than simply tracking expenses after they happen, LedgerLeaf encourages users to plan ahead by assigning every peso a purpose before spending.
 
-Users can manage their finances through budgeting, expense tracking, savings management, and real-time financial summaries, all within a responsive interface optimized for desktop and mobile devices.
+The application combines budgeting, pocket management, expense tracking, savings goals, financial analytics, and reporting into a single responsive platform optimized for both desktop and mobile devices.
 
-This project was developed as part of the **GoodStrings Inc. Technical Assessment**, demonstrating full-stack web development using React, Laravel, TypeScript, and MySQL.
+LedgerLeaf represents the evolution of an earlier mobile budgeting concept into a more complete web application featuring a Laravel backend, relational database, RESTful APIs, and a modern React interface.
+
+---
+
+# Core Philosophy
+
+Traditional expense trackers answer:
+
+> **"Where did my money go?"**
+
+LedgerLeaf encourages users to ask:
+
+> **"Where should my money go before I spend it?"**
+
+Money first enters your **Total Balance**, then becomes available as **Safe Balance**, allowing you to intentionally allocate funds into budgeting pockets or savings before recording expenses.
+
+```
+Income
+    │
+    ▼
+Total Balance
+    │
+    ▼
+Safe Balance
+    │
+    ├──────────────┐
+    ▼              ▼
+Budget Pockets   Savings Goals
+    │
+    ▼
+Expenses
+    │
+    ▼
+Analytics & Insights
+```
+
+This workflow promotes mindful spending, organized budgeting, and healthier financial habits.
 
 ---
 
 # Features
 
-### Authentication
+## Authentication
 
-- User registration and login
-- Secure authentication
+- Secure user registration and login
 - Session management
 - Protected routes
+- Password validation
 
-### Dashboard
+## Dashboard
 
 - Financial overview
 - Safe Balance and Total Balance
+- Pocket summaries
 - Recent transactions
-- Budget health summary
-- Spending statistics
+- Budget health
+- Quick actions
 
-### Pocket Management
+## Pocket Management
 
-- Create, edit, archive, and delete pockets
+- Create, update, archive, and delete pockets
 - Allocate available funds
 - Monitor pocket balances
-- Track remaining allocations
+- Organize spending categories
 
-### Budget Planner
+## Budget Planner
 
-- Organize monthly budgets
-- Allocate funds across pockets
-- Reallocate budgets
-- View allocation summaries
+- Plan monthly budgets
+- Allocate disposable income
+- Reallocate pocket budgets
+- Budget utilization overview
 
-### Expense Management
+## Expense Management
 
 - Record expenses by pocket
-- Edit and delete transactions
-- Archive expenses
-- Filter transaction history
+- Edit and archive transactions
+- Transaction history
+- Category filtering
+- Search functionality
 
-### Savings
+## Savings
 
+- Create savings goals
 - Deposit and withdraw savings
-- Track savings progress
-- Maintain savings history
+- Progress tracking
+- Safe Balance validation
+- Savings history
 
-### Profile
+## Analytics
+
+- Spending trends
+- Pocket breakdown
+- Monthly comparisons
+- Savings performance
+- Financial insights
+- Exportable reports
+
+## Profile
 
 - Update account information
 - Change password
-- Export reports to PDF
-- Export reports to Excel
+- Export reports (PDF / Excel)
+- View account statistics
 
----
+## Help Center
 
-# Core Concept
-
-LedgerLeaf follows a proactive budgeting workflow.
-
-```
-Available Funds
-        ↓
- Allocate to Pockets
-        ↓
- Record Expenses
-        ↓
- Update Balances
-        ↓
- View Financial Insights
-```
-
-Instead of asking **"Where did my money go?"**, LedgerLeaf encourages users to decide **"Where should my money go?"** before spending.
+- About LedgerLeaf
+- Getting Started guide
+- Financial concepts
+- Frequently Asked Questions
+- Application information
 
 ---
 
@@ -109,27 +146,29 @@ Instead of asking **"Where did my money go?"**, LedgerLeaf encourages users to d
 
 | Category | Technologies |
 |-----------|--------------|
-| Frontend | React, TypeScript, Tailwind CSS |
-| Backend | Laravel, PHP |
+| Frontend | React 19, TypeScript, Tailwind CSS, Inertia.js |
+| Backend | Laravel 12, PHP |
 | Database | MySQL |
-| Build Tools | Vite, npm, Composer |
+| Build Tools | Vite, Composer, npm |
 
 ---
 
 # Project Highlights
 
-This project demonstrates:
+LedgerLeaf demonstrates modern full-stack web development through:
 
 - Full CRUD operations
-- RESTful API development
-- Responsive web design
-- Component-based architecture
-- Authentication and authorization
-- Relational database integration
-- Form validation
-- Financial data visualization
-- PDF and Excel export generation
+- RESTful API integration
+- Authentication & Authorization
+- Responsive UI/UX
 - Mobile-first development
+- Component-based architecture
+- Financial data visualization
+- Real-time dashboard summaries
+- PDF and Excel export generation
+- Relational database design
+- Form validation
+- JSON-driven help documentation
 
 ---
 
@@ -137,14 +176,29 @@ This project demonstrates:
 
 ```text
 LedgerLeaf/
-├── backend/
-├── frontend/
-│   ├── components/
-│   ├── layouts/
-│   ├── pages/
-│   ├── services/
-│   ├── hooks/
-│   └── assets/
+│
+├── app/
+├── bootstrap/
+├── config/
+├── database/
+├── public/
+├── resources/
+│   ├── js/
+│   │   ├── Components/
+│   │   ├── Layouts/
+│   │   ├── Pages/
+│   │   ├── Hooks/
+│   │   ├── Services/
+│   │   ├── Types/
+│   │   └── Utils/
+│   │
+│   ├── data/
+│   │   └── help/
+│   │
+│   └── views/
+│
+├── routes/
+├── storage/
 ├── README.md
 └── ...
 ```
@@ -153,44 +207,99 @@ LedgerLeaf/
 
 # Getting Started
 
-## Clone
+## Clone the Repository
 
 ```bash
 git clone https://github.com/Rachiminoff/LedgerLeaf.git
+
 cd LedgerLeaf
 ```
 
-## Frontend
+---
+
+## Install Dependencies
 
 ```bash
 npm install
+
+composer install
+```
+
+---
+
+## Configure Environment
+
+```bash
+cp .env.example .env
+
+php artisan key:generate
+```
+
+Configure your database credentials inside `.env`.
+
+---
+
+## Run Database Migrations
+
+```bash
+php artisan migrate
+```
+
+(Optional)
+
+```bash
+php artisan db:seed
+```
+
+---
+
+## Start Development Servers
+
+Laravel
+
+```bash
+php artisan serve
+```
+
+Vite
+
+```bash
 npm run dev
 ```
 
-## Backend
+---
 
-```bash
-composer install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate
-php artisan serve
-```
+# Future Improvements
+
+Planned enhancements include:
+
+- Email verification
+- Password recovery
+- Budget templates
+- Smart budgeting recommendations
+- Receipt uploads
+- Recurring transactions
+- Notifications
+- Data backups
+- Multi-currency support
+- Dark / Light theme customization
 
 ---
 
 # License
 
-This repository was created for the **GoodStrings Inc. Technical Assessment** and is intended to demonstrate modern full-stack web development practices.
+This project was developed as part of the **GoodStrings Inc. Technical Assessment** and is intended to demonstrate modern full-stack web development practices using Laravel, React, TypeScript, and MySQL.
 
 ---
 
 <div align="center">
 
-**LedgerLeaf**
+## LedgerLeaf
 
-*Smart records. Clear future.*
+**Smart records. Clear future.**
 
-Developed using React, Laravel, TypeScript, Tailwind CSS, and MySQL.
+Pocket-Based Personal Finance Management System
+
+Built with **Laravel**, **React**, **TypeScript**, **Tailwind CSS**, and **MySQL**.
 
 </div>

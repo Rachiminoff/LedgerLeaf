@@ -1,5 +1,17 @@
+/**
+ * Budget Planner Index Page
+ * 
+ * This component serves as the main entry point for the Budget Planner module.
+ * It displays budget overview, pocket management, allocation tracking, and
+ * provides CRUD operations for budget management.
+ * 
+ * @package LedgerLeaf
+ * @subpackage Resources/js/Pages/Budget
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
+import { toastSuccess, toastError, toastWarning } from '@/Components/ui/Toast';
 import { Sidebar } from '@/Components/dashboard/Sidebar';
 import { TopNav } from '@/Components/dashboard/TopNav';
 import BudgetHeader from '@/Components/budget/BudgetHeader';
@@ -22,6 +34,9 @@ import { usePockets } from '@/hooks/usePockets';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { SkeletonCard, SkeletonChart } from '@/Components/ui/skeleton';
 
+/**
+ * Page properties received from the server.
+ */
 interface PageProps {
     auth: {
         user: {
@@ -32,28 +47,60 @@ interface PageProps {
     };
 }
 
-export default function BudgetIndex() {
+/**
+ * Confirmation modal configuration.
+ */
+interface ConfirmModalConfig {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    action: () => void;
+    type: 'danger' | 'warning' | 'info';
+    confirmText: string;
+}
+
+/**
+ * BudgetIndex Component
+ * 
+ * Renders the Budget Planner page with all sub-components and manages
+ * the state for budget operations.
+ * 
+ * @returns {JSX.Element} The rendered Budget Planner page.
+ */
+export default function BudgetIndex(): JSX.Element {
+    // ─── Props ──────────────────────────────────────────────────────
     const { auth } = usePage<PageProps>().props;
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [isPocketModalOpen, setIsPocketModalOpen] = useState(false);
-    const [isAllocateModalOpen, setIsAllocateModalOpen] = useState(false);
-    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+
+    // ─── State ──────────────────────────────────────────────────────
+    /** Controls mobile sidebar visibility. */
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+    
+    /** Controls pocket creation/editing modal visibility. */
+    const [isPocketModalOpen, setIsPocketModalOpen] = useState<boolean>(false);
+    
+    /** Controls allocate funds modal visibility. */
+    const [isAllocateModalOpen, setIsAllocateModalOpen] = useState<boolean>(false);
+    
+    /** Controls transfer funds modal visibility. */
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState<boolean>(false);
+    
+    /** The pocket currently being edited. */
     const [editingPocket, setEditingPocket] = useState<any>(null);
+    
+    /** The ID of the selected pocket for allocation. */
     const [selectedPocketId, setSelectedPocketId] = useState<number | null>(null);
+    
+    /** Determines whether the modal is in create or edit mode. */
     const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-    const [error, setError] = useState<string | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    
+    /** The user's current safe balance. */
     const [safeBalance, setSafeBalance] = useState<number>(0);
 
-    // Confirmation Modal State
-    const [confirmModal, setConfirmModal] = useState<{
-        isOpen: boolean;
-        title: string;
-        message: string;
-        action: () => void;
-        type: 'danger' | 'warning' | 'info';
-        confirmText: string;
-    }>({
+    /**
+     * Confirmation modal state for destructive actions.
+     * Used for archive and delete confirmations.
+     */
+    const [confirmModal, setConfirmModal] = useState<ConfirmModalConfig>({
         isOpen: false,
         title: '',
         message: '',
@@ -62,8 +109,14 @@ export default function BudgetIndex() {
         confirmText: 'Confirm',
     });
 
+    /** Determines if the current viewport is mobile size. */
     const isMobile = useMediaQuery('(max-width: 768px)');
 
+    // ─── Hooks ──────────────────────────────────────────────────────
+
+    /**
+     * Budget management hook providing budget data and operations.
+     */
     const {
         summary,
         stats,
@@ -80,6 +133,9 @@ export default function BudgetIndex() {
         refundPocket,
     } = useBudget();
 
+    /**
+     * Pocket management hook providing pocket data and operations.
+     */
     const {
         pockets,
         filters,
@@ -88,72 +144,83 @@ export default function BudgetIndex() {
         fetchPockets,
     } = usePockets();
 
-    useEffect(() => {
+    // ─── Effects ────────────────────────────────────────────────────
+
+    /**
+     * Fetch budget data and pockets when filters change.
+     */
+    useEffect((): void => {
         fetchBudgetData();
         fetchPockets(filters);
     }, [filters]);
 
-    // Update safeBalance when summary changes
-    useEffect(() => {
+    /**
+     * Update safeBalance when the summary data changes.
+     */
+    useEffect((): void => {
         if (summary?.safe_balance !== undefined && summary?.safe_balance !== null) {
             setSafeBalance(Number(summary.safe_balance));
         }
     }, [summary]);
 
-    // Auto-dismiss messages
-    useEffect(() => {
-        if (successMessage) {
-            const timer = setTimeout(() => setSuccessMessage(null), 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [successMessage]);
+    // ─── Event Handlers ─────────────────────────────────────────────
 
-    useEffect(() => {
-        if (error) {
-            const timer = setTimeout(() => setError(null), 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [error]);
-
-    const handleCreatePocket = () => {
+    /**
+     * Opens the pocket creation modal.
+     * 
+     * @returns {void}
+     */
+    const handleCreatePocket = (): void => {
         setEditingPocket(null);
         setModalMode('create');
         setIsPocketModalOpen(true);
-        setError(null);
-        setSuccessMessage(null);
     };
 
-    const handleEditPocket = (pocket: any) => {
+    /**
+     * Opens the pocket edit modal with the selected pocket data.
+     * 
+     * @param {any} pocket - The pocket to edit.
+     * @returns {void}
+     */
+    const handleEditPocket = (pocket: any): void => {
         setEditingPocket(pocket);
         setModalMode('edit');
         setIsPocketModalOpen(true);
-        setError(null);
-        setSuccessMessage(null);
     };
 
-    const handleSavePocket = async (data: any) => {
+    /**
+     * Saves a pocket (create or update).
+     * 
+     * @param {any} data - The pocket data to save.
+     * @returns {Promise<void>}
+     */
+    const handleSavePocket = async (data: any): Promise<void> => {
         try {
-            setError(null);
-            setSuccessMessage(null);
-            
             if (modalMode === 'create') {
                 await createPocket(data);
-                setSuccessMessage('Pocket created successfully!');
+                toastSuccess('Pocket created successfully!');
             } else {
                 await updatePocket(editingPocket!.id, data);
-                setSuccessMessage('Pocket updated successfully!');
+                toastSuccess('Pocket updated successfully!');
             }
             
             setIsPocketModalOpen(false);
             fetchPockets(filters);
             fetchBudgetData();
         } catch (err: any) {
-            setError(err.message || 'Failed to save pocket');
+            toastError(err.message || 'Failed to save pocket');
             console.error('Failed to save pocket:', err);
         }
     };
 
-    const handleArchivePocket = async (id: number) => {
+    /**
+     * Archives a pocket with confirmation.
+     * Refunds any remaining balance to safe balance.
+     * 
+     * @param {number} id - The ID of the pocket to archive.
+     * @returns {Promise<void>}
+     */
+    const handleArchivePocket = async (id: number): Promise<void> => {
         const pocket = pockets.find((p: any) => p.id === id);
         const refundAmount = pocket?.allocated - pocket?.spent;
         
@@ -163,20 +230,27 @@ export default function BudgetIndex() {
             message: `Are you sure you want to archive "${pocket?.name}"?${refundAmount > 0 ? `\n\n💰 ₱${refundAmount.toFixed(2)} will be refunded to your safe balance.` : ''}`,
             type: 'warning',
             confirmText: 'Archive',
-            action: async () => {
+            action: async (): Promise<void> => {
                 try {
                     await archivePocket(id);
-                    setSuccessMessage('Pocket archived successfully!');
+                    toastSuccess('Pocket archived successfully!');
                     fetchPockets(filters);
                     fetchBudgetData();
                 } catch (err: any) {
-                    setError(err.message || 'Failed to archive pocket');
+                    toastError(err.message || 'Failed to archive pocket');
                 }
             },
         });
     };
 
-    const handleDeletePocket = async (id: number) => {
+    /**
+     * Permanently deletes a pocket with confirmation.
+     * Refunds any remaining balance to safe balance.
+     * 
+     * @param {number} id - The ID of the pocket to delete.
+     * @returns {Promise<void>}
+     */
+    const handleDeletePocket = async (id: number): Promise<void> => {
         const pocket = pockets.find((p: any) => p.id === id);
         const refundAmount = pocket?.allocated - pocket?.spent;
         
@@ -186,72 +260,115 @@ export default function BudgetIndex() {
             message: `Are you sure you want to permanently delete "${pocket?.name}"?${refundAmount > 0 ? `\n\n💰 ₱${refundAmount.toFixed(2)} will be refunded to your safe balance.` : ''}`,
             type: 'danger',
             confirmText: 'Delete',
-            action: async () => {
+            action: async (): Promise<void> => {
                 try {
                     await deletePocket(id);
-                    setSuccessMessage('Pocket deleted successfully!');
+                    toastSuccess('Pocket deleted successfully!');
                     fetchPockets(filters);
                     fetchBudgetData();
                 } catch (err: any) {
-                    setError(err.message || 'Failed to delete pocket');
+                    toastError(err.message || 'Failed to delete pocket');
                 }
             },
         });
     };
 
-    const handleAllocateFunds = async (pocketId: number, amount: number) => {
+    /**
+     * Allocates funds to a specific pocket.
+     * 
+     * @param {number} pocketId - The ID of the pocket to allocate to.
+     * @param {number} amount - The amount to allocate.
+     * @returns {Promise<void>}
+     */
+    const handleAllocateFunds = async (pocketId: number, amount: number): Promise<void> => {
         try {
-            setError(null);
-            setSuccessMessage(null);
             await allocateFunds(pocketId, amount);
-            setSuccessMessage(`₱${amount.toFixed(2)} allocated successfully!`);
+            toastSuccess(`₱${amount.toFixed(2)} allocated successfully!`);
             setIsAllocateModalOpen(false);
             fetchPockets(filters);
             fetchBudgetData();
         } catch (err: any) {
-            setError(err.message || 'Failed to allocate funds');
+            toastError(err.message || 'Failed to allocate funds');
         }
     };
 
-    const handleTransferFunds = async (fromPocketId: number, toPocketId: number, amount: number) => {
+    /**
+     * Transfers funds between two pockets.
+     * 
+     * @param {number} fromPocketId - The source pocket ID.
+     * @param {number} toPocketId - The destination pocket ID.
+     * @param {number} amount - The amount to transfer.
+     * @returns {Promise<void>}
+     */
+    const handleTransferFunds = async (
+        fromPocketId: number, 
+        toPocketId: number, 
+        amount: number
+    ): Promise<void> => {
         try {
-            setError(null);
-            setSuccessMessage(null);
             await transferFunds(fromPocketId, toPocketId, amount);
-            setSuccessMessage(`₱${amount.toFixed(2)} transferred successfully!`);
+            toastSuccess(`₱${amount.toFixed(2)} transferred successfully!`);
             setIsTransferModalOpen(false);
             fetchPockets(filters);
             fetchBudgetData();
         } catch (err: any) {
-            setError(err.message || 'Failed to transfer funds');
+            toastError(err.message || 'Failed to transfer funds');
         }
     };
 
-    const handleRefundPocket = async (pocketId: number, amount: number) => {
+    /**
+     * Refunds a pocket's remaining balance to safe balance.
+     * 
+     * @param {number} pocketId - The ID of the pocket to refund.
+     * @param {number} amount - The amount to refund.
+     * @returns {Promise<void>}
+     */
+    const handleRefundPocket = async (pocketId: number, amount: number): Promise<void> => {
         try {
             await refundPocket(pocketId);
-            setSuccessMessage(`₱${amount.toFixed(2)} refunded to safe balance!`);
+            toastSuccess(`₱${amount.toFixed(2)} refunded to safe balance!`);
             fetchPockets(filters);
             fetchBudgetData();
         } catch (err: any) {
-            setError(err.message || 'Failed to refund pocket');
+            toastError(err.message || 'Failed to refund pocket');
         }
     };
 
-    const handleLogout = () => {
-        router.post('/logout');
+    /**
+     * Handles user logout.
+     * 
+     * @returns {void}
+     */
+    const handleLogout = (): void => {
+        if (confirm('Are you sure you want to log out?')) {
+            router.post('/logout');
+        }
     };
 
+    // ─── Render ─────────────────────────────────────────────────────
+
+    /**
+     * Render loading state while data is being fetched.
+     */
     if (loading) {
         return (
             <div className="min-h-screen bg-[#000000] font-['Inter',system-ui,sans-serif]">
-                <Sidebar activePage="budget" onLogout={handleLogout} />
+                <Sidebar 
+                    activePage="budget" 
+                    onLogout={handleLogout}
+                    isMobileOpen={isMobileMenuOpen}
+                    onMobileClose={() => setIsMobileMenuOpen(false)}
+                />
                 <div className="lg:ml-[280px] min-h-screen">
-                    <TopNav title="Budget Planner" onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} notificationCount={0} />
-                    <main className="p-4 sm:p-6 lg:p-8">
+                    <TopNav 
+                        title="Budget Planner" 
+                        onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+                        notificationCount={0} 
+                    />
+                    <main className="p-3 sm:p-4 md:p-6 lg:p-8">
                         <div className="max-w-[1400px] mx-auto">
                             <SkeletonCard count={4} />
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mt-4 md:mt-6">
                                 <div className="lg:col-span-2">
                                     <SkeletonCard count={3} />
                                 </div>
@@ -266,67 +383,65 @@ export default function BudgetIndex() {
         );
     }
 
+    /**
+     * Render the main Budget Planner page.
+     */
     return (
         <>
             <Head title="Budget Planner | LedgerLeaf" />
             
             <div className="min-h-screen bg-[#000000] font-['Inter',system-ui,sans-serif]">
-                <Sidebar activePage="budget" onLogout={handleLogout} />
+                {/* Sidebar Navigation */}
+                <Sidebar 
+                    activePage="budget" 
+                    onLogout={handleLogout}
+                    isMobileOpen={isMobileMenuOpen}
+                    onMobileClose={() => setIsMobileMenuOpen(false)}
+                />
 
+                {/* Main Content Area */}
                 <div className="lg:ml-[280px] min-h-screen">
+                    {/* Top Navigation Bar */}
                     <TopNav
                         title="Budget Planner"
                         onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                         notificationCount={0}
                     />
 
-                    <main className="p-4 sm:p-6 lg:p-8">
+                    {/* Main Content */}
+                    <main className="p-3 sm:p-4 md:p-6 lg:p-8">
                         <div className="max-w-[1400px] mx-auto">
-                            {/* Success Message */}
-                            {successMessage && (
-                                <div className="mb-4 p-4 bg-[#5CB85C]/10 border border-[#5CB85C]/30 rounded-xl text-[#5CB85C] text-sm">
-                                    {successMessage}
-                                </div>
-                            )}
-
-                            {/* Error Message */}
-                            {error && (
-                                <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-500 text-sm">
-                                    {error}
-                                </div>
-                            )}
-
-                            {/* Header */}
+                            {/* Page Header */}
                             <BudgetHeader />
 
-                            {/* Quick Actions */}
+                            {/* Quick Action Buttons */}
                             <QuickActions
                                 onCreatePocket={handleCreatePocket}
                                 onAllocateFunds={() => setIsAllocateModalOpen(true)}
                                 onTransferFunds={() => setIsTransferModalOpen(true)}
                             />
 
-                            {/* Summary Cards */}
+                            {/* Summary Statistics Cards */}
                             <BudgetSummaryCards summary={summary} loading={loading} />
 
-                            {/* Main Grid */}
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-                                {/* Left Column - 2/3 */}
-                                <div className="lg:col-span-2 space-y-6">
-                                    {/* Safe Balance */}
+                            {/* Main Content Grid - Mobile Optimized */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mt-4 md:mt-6">
+                                {/* Left Column - Pocket Management */}
+                                <div className="lg:col-span-2 space-y-4 md:space-y-6">
+                                    {/* Safe Balance Card */}
                                     <SafeBalanceCard
                                         safeBalance={safeBalance}
                                         onAllocate={() => setIsAllocateModalOpen(true)}
                                     />
 
-                                    {/* Filters */}
+                                    {/* Budget Filters */}
                                     <BudgetFilters
                                         filters={filters}
                                         onFilterChange={setFilters}
                                         onReset={resetFilters}
                                     />
 
-                                    {/* Pocket List */}
+                                    {/* Pocket List or Empty State */}
                                     {pockets.length === 0 ? (
                                         <EmptyState onCreatePocket={handleCreatePocket} />
                                     ) : (
@@ -335,7 +450,7 @@ export default function BudgetIndex() {
                                             onEdit={handleEditPocket}
                                             onArchive={handleArchivePocket}
                                             onDelete={handleDeletePocket}
-                                            onAllocate={(id) => {
+                                            onAllocate={(id: number) => {
                                                 setSelectedPocketId(id);
                                                 setIsAllocateModalOpen(true);
                                             }}
@@ -344,24 +459,37 @@ export default function BudgetIndex() {
                                     )}
                                 </div>
 
-                                {/* Right Column - 1/3 */}
-                                <div className="space-y-6">
+                                {/* Right Column - Insights & Charts (Desktop Only) */}
+                                {!isMobile && (
+                                    <div className="space-y-4 md:space-y-6">
+                                        <BudgetHealthWidget health={summary?.budget_health || 0} />
+                                        <AllocationChart pockets={pockets} />
+                                        <BudgetInsights insights={insights} />
+                                        <RecentActivity activities={recentActivity} />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Mobile Stats & Insights (Shown Below Content on Mobile) */}
+                            {isMobile && (
+                                <div className="mt-4 md:mt-6 space-y-4">
                                     <BudgetHealthWidget health={summary?.budget_health || 0} />
                                     <AllocationChart pockets={pockets} />
                                     <BudgetInsights insights={insights} />
                                     <RecentActivity activities={recentActivity} />
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </main>
                 </div>
 
-                {/* Modals */}
+                {/* ─── Modals ────────────────────────────────────────── */}
+
+                {/* Pocket Creation/Edit Modal */}
                 <PocketModal
                     isOpen={isPocketModalOpen}
                     onClose={() => {
                         setIsPocketModalOpen(false);
-                        setError(null);
                     }}
                     onSave={handleSavePocket}
                     mode={modalMode}
@@ -369,11 +497,11 @@ export default function BudgetIndex() {
                     safeBalance={safeBalance}
                 />
 
+                {/* Allocate Funds Modal */}
                 <AllocateFundsModal
                     isOpen={isAllocateModalOpen}
                     onClose={() => {
                         setIsAllocateModalOpen(false);
-                        setError(null);
                     }}
                     onAllocate={handleAllocateFunds}
                     pockets={pockets}
@@ -381,17 +509,17 @@ export default function BudgetIndex() {
                     safeBalance={safeBalance}
                 />
 
+                {/* Transfer Funds Modal */}
                 <TransferFundsModal
                     isOpen={isTransferModalOpen}
                     onClose={() => {
                         setIsTransferModalOpen(false);
-                        setError(null);
                     }}
                     onTransfer={handleTransferFunds}
                     pockets={pockets}
                 />
 
-                {/* Confirmation Modal */}
+                {/* Confirmation Modal for Destructive Actions */}
                 <ConfirmModal
                     isOpen={confirmModal.isOpen}
                     onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}

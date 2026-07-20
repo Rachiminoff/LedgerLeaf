@@ -290,6 +290,99 @@ class SavingsGoalController extends Controller
     }
 
     /**
+     * Refund funds from a savings goal back to safe balance
+     * Used when deleting a goal that has funds
+     */
+    public function refund(Request $request, $id)
+    {
+        try {
+            $validated = $request->validate([
+                'amount' => 'required|numeric|min:0.01',
+            ]);
+
+            $user = $request->user();
+            $goal = SavingsGoal::where('user_id', $user->id)->find($id);
+
+            if (!$goal) {
+                return response()->json(['message' => 'Goal not found'], 404);
+            }
+
+            if ($goal->is_archived) {
+                return response()->json(['message' => 'Cannot refund archived goal'], 400);
+            }
+
+            if ($validated['amount'] > $goal->current_amount) {
+                return response()->json([
+                    'message' => 'Amount exceeds current saved amount',
+                    'available' => $goal->current_amount,
+                    'requested' => $validated['amount']
+                ], 400);
+            }
+
+            $oldSafeBalance = $user->safe_balance;
+            $oldCurrentAmount = $goal->current_amount;
+            $refundAmount = $validated['amount'];
+
+            DB::transaction(function () use ($user, $goal, $refundAmount) {
+                // Add funds back to safe balance
+                $user->safe_balance += $refundAmount;
+                $user->save();
+
+                // Reduce goal balance
+                $goal->current_amount -= $refundAmount;
+
+                // If goal is completed and balance drops below target, mark as not completed
+                if ($goal->is_completed && $goal->current_amount < $goal->target_amount) {
+                    $goal->is_completed = false;
+                    $goal->completed_at = null;
+                }
+
+                $goal->save();
+
+                // Log the refund transaction
+                SavingsTransaction::create([
+                    'user_id' => $user->id,
+                    'savings_goal_id' => $goal->id,
+                    'type' => 'refund',
+                    'amount' => $refundAmount,
+                    'notes' => 'Refunded to safe balance during goal deletion',
+                    'balance_after' => $goal->current_amount,
+                ]);
+            });
+
+            // Create audit log
+            $this->createAuditLog(
+                $user->id,
+                'refund_savings_goal',
+                'savings_goals',
+                $goal->id,
+                [
+                    'safe_balance' => $oldSafeBalance,
+                    'goal_current_amount' => $oldCurrentAmount,
+                ],
+                [
+                    'safe_balance' => $user->fresh()->safe_balance,
+                    'goal_current_amount' => $goal->fresh()->current_amount,
+                ],
+                $request
+            );
+
+            return response()->json([
+                'message' => "Refunded ₱{$refundAmount} to safe balance",
+                'goal' => $goal->fresh(),
+                'new_safe_balance' => $user->fresh()->safe_balance,
+                'refunded_amount' => $refundAmount,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to refund: ' . $e->getMessage(),
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Update a savings goal
      */
     public function update(Request $request, SavingsGoal $goal)
@@ -408,12 +501,22 @@ class SavingsGoalController extends Controller
 
     /**
      * Delete a savings goal (soft delete)
+     * Note: Refund should be called before delete if there are funds
      */
     public function destroy(SavingsGoal $goal)
     {
         try {
             $user = auth()->user();
             $oldValues = $goal->toArray();
+
+            // Check if goal has funds that need to be refunded
+            if ($goal->current_amount > 0 && !$goal->is_archived) {
+                return response()->json([
+                    'message' => 'Goal has funds that must be refunded before deletion',
+                    'current_amount' => $goal->current_amount,
+                    'requires_refund' => true,
+                ], 400);
+            }
 
             $goal->delete();
 

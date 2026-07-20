@@ -174,13 +174,6 @@ export default function GoalDetailsModal({
                                         <Pencil className="w-4 h-4" />
                                         Edit
                                     </button>
-                                    <button
-                                        onClick={onClose}
-                                        className="flex items-center gap-2 px-4 py-2 border border-[#FF5A5A]/30 text-[#FF5A5A] rounded-lg hover:bg-[#FF5A5A]/10 transition-colors"
-                                    >
-                                        <Archive className="w-4 h-4" />
-                                        Archive
-                                    </button>
                                 </div>
                             </div>
                         </Dialog.Panel>

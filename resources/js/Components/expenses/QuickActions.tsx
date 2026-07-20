@@ -1,10 +1,11 @@
-import { Plus, History, Archive, BarChart3 } from 'lucide-react';
+import { Plus, Archive } from 'lucide-react';
 
 interface QuickActionsProps {
     onCreateExpense: () => void;
+    onViewArchived: () => void;
 }
 
-export default function QuickActions({ onCreateExpense }: QuickActionsProps) {
+export default function QuickActions({ onCreateExpense, onViewArchived }: QuickActionsProps) {
     const actions = [
         {
             id: 'add',
@@ -14,30 +15,16 @@ export default function QuickActions({ onCreateExpense }: QuickActionsProps) {
             onClick: onCreateExpense,
         },
         {
-            id: 'history',
-            label: 'Transaction History',
-            icon: History,
-            color: '#3B82F6',
-            onClick: () => {},
-        },
-        {
             id: 'archived',
             label: 'Archived Expenses',
             icon: Archive,
             color: '#F59E0B',
-            onClick: () => {},
-        },
-        {
-            id: 'reports',
-            label: 'Expense Reports',
-            icon: BarChart3,
-            color: '#8B5CF6',
-            onClick: () => {},
+            onClick: onViewArchived,
         },
     ];
 
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-4 mb-6 max-w-md">
             {actions.map((action) => {
                 const Icon = action.icon;
                 return (

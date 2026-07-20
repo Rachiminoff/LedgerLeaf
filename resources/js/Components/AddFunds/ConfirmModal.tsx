@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect } from 'react'
 import { Icon } from '@iconify/react'
 
 interface ConfirmModalProps {
@@ -7,12 +7,10 @@ interface ConfirmModalProps {
   onConfirm: () => void
   amount: number
   destination: string
+  description: string
+  date: string
   isSubmitting: boolean
-  destinations: Array<{
-    id: string
-    name: string
-    type: string
-  }>
+  destinations: Array<{ id: string; name: string; type: string }>
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -21,97 +19,122 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   onConfirm,
   amount,
   destination,
+  description,
+  date,
   isSubmitting,
   destinations,
 }) => {
-  const modalRef = useRef<HTMLDivElement>(null)
-
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose()
-      }
-    }
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
-        onClose()
-      }
-    }
-
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape)
-      document.addEventListener('mousedown', handleClickOutside)
       document.body.style.overflow = 'hidden'
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape)
-      document.removeEventListener('mousedown', handleClickOutside)
+    } else {
       document.body.style.overflow = 'unset'
     }
-  }, [isOpen, onClose])
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 
   const getDestinationName = (id: string) => {
-    const dest = destinations.find(d => d.id === id)
-    return dest?.name || 'Unknown'
+    const found = destinations.find(d => d.id === id)
+    return found ? found.name : id
   }
 
-  const formatCurrency = (value: number) => {
-    return `₱${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  }
+  const formattedAmount = new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
-      <div
-        ref={modalRef}
-        className="bg-[#1A1A1A] rounded-2xl border border-[#242424] shadow-2xl max-w-md w-full animate-scaleIn"
-      >
-        <div className="p-6">
-          <div className="text-center mb-6">
-            <div className="w-12 h-12 rounded-full bg-[#5CB85C]/10 flex items-center justify-center mx-auto mb-4">
-              <Icon icon="mdi:alert" className="h-6 w-6 text-[#5CB85C]" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+      <div className="bg-[#111111] border border-[#242424] rounded-2xl max-w-md w-full p-6 shadow-2xl animate-slideUp">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#5CB85C]/10 flex items-center justify-center">
+              <Icon icon="mdi:receipt" className="w-6 h-6 text-[#5CB85C]" />
             </div>
-            <h3 className="text-xl font-light text-white">Confirm Deposit</h3>
-            <p className="text-sm text-[#9A9A9A] font-light mt-1">
-              You are about to add
-            </p>
-            <p className="text-2xl font-light text-[#5CB85C] mt-2">
-              {formatCurrency(amount)}
-            </p>
-            <p className="text-sm text-[#9A9A9A] font-light mt-1">
-              to <span className="text-white">{getDestinationName(destination)}</span>
+            <h3 className="text-lg font-semibold text-white">Confirm Transaction</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-[#9A9A9A] hover:text-white transition-colors"
+            disabled={isSubmitting}
+          >
+            <Icon icon="mdi:close" className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Receipt-style confirmation */}
+        <div className="bg-[#171717] rounded-xl p-4 mb-6 border border-[#242424]">
+          {/* Receipt Header */}
+          <div className="text-center border-b border-[#242424] pb-3 mb-3">
+            <p className="text-xs text-[#6B7280] font-mono tracking-wider">TRANSACTION RECEIPT</p>
+            <p className="text-[10px] text-[#6B7280] mt-1 font-mono">
+              {new Date(date).toLocaleString('en-PH', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
             </p>
           </div>
 
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="flex-1 px-4 py-3 text-sm font-medium text-[#9A9A9A] hover:text-white transition-colors duration-200 rounded-xl border border-[#242424] hover:border-[#3A3A3A] disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={onConfirm}
-              disabled={isSubmitting}
-              className="flex-1 px-4 py-3 bg-[#5CB85C] text-black text-sm font-semibold rounded-xl hover:bg-[#6FCF70] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Processing...
+          {/* Receipt Body */}
+          <div className="space-y-2">
+            <div className="flex justify-between py-1.5 border-b border-[#242424]/50">
+              <span className="text-xs text-[#9A9A9A]">Destination</span>
+              <span className="text-xs text-white font-mono">
+                {getDestinationName(destination)}
+              </span>
+            </div>
+            <div className="flex justify-between py-1.5 border-b border-[#242424]/50">
+              <span className="text-xs text-[#9A9A9A]">Amount</span>
+              <span className="text-xs text-[#5CB85C] font-mono font-medium">
+                {formattedAmount}
+              </span>
+            </div>
+            {description && (
+              <div className="flex justify-between py-1.5 border-b border-[#242424]/50">
+                <span className="text-xs text-[#9A9A9A]">Description</span>
+                <span className="text-xs text-white font-mono max-w-[150px] truncate">
+                  {description}
                 </span>
-              ) : (
-                'Confirm'
-              )}
-            </button>
+              </div>
+            )}
+            <div className="flex justify-between py-1.5">
+              <span className="text-xs text-[#9A9A9A]">Status</span>
+              <span className="text-xs text-[#F59E0B] font-mono">PENDING CONFIRMATION</span>
+            </div>
           </div>
+        </div>
+
+        {/* Actions */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="px-4 py-2.5 bg-[#171717] border border-[#242424] text-white font-medium rounded-lg hover:bg-[#1f1f1f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isSubmitting}
+            className="px-4 py-2.5 bg-[#5CB85C] text-black font-medium rounded-lg hover:bg-[#4a9e4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isSubmitting ? (
+              <>
+                <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                Processing...
+              </>
+            ) : (
+              'Confirm'
+            )}
+          </button>
         </div>
       </div>
     </div>

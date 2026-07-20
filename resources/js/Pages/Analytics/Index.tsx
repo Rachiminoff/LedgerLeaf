@@ -98,7 +98,12 @@ export default function AnalyticsIndex() {
             <Head title="Analytics | LedgerLeaf" />
 
             <div className="min-h-screen bg-[#000000] font-['Inter',system-ui,sans-serif]">
-                <Sidebar activePage="analytics" onLogout={handleLogout} />
+                <Sidebar 
+                    activePage="analytics" 
+                    onLogout={handleLogout}
+                    isMobileOpen={isMobileMenuOpen}
+                    onMobileClose={() => setIsMobileMenuOpen(false)}
+                />
 
                 <div className="lg:ml-[280px] min-h-screen">
                     <TopNav

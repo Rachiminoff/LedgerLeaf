@@ -18,30 +18,6 @@ export default function ExpenseHeader() {
                         Track, organize, and manage your spending.
                     </p>
                 </div>
-
-                {/* Desktop Actions */}
-                <div className="hidden md:flex items-center gap-4">
-                    <button className="p-2 rounded-lg bg-[#111111] border border-[#242424] hover:border-[#5CB85C] transition-colors">
-                        <Search className="w-5 h-5 text-[#9A9A9A]" />
-                    </button>
-                    <button className="p-2 rounded-lg bg-[#111111] border border-[#242424] hover:border-[#5CB85C] transition-colors relative">
-                        <Bell className="w-5 h-5 text-[#9A9A9A]" />
-                        <span className="absolute top-1 right-1 w-2 h-2 bg-[#5CB85C] rounded-full" />
-                    </button>
-                    <Link 
-                        href="/profile" 
-                        className="flex items-center gap-2 p-2 rounded-lg bg-[#111111] border border-[#242424] hover:border-[#5CB85C] transition-colors"
-                    >
-                        <div className="w-8 h-8 rounded-full bg-[#5CB85C] flex items-center justify-center text-white font-medium">
-                            {user?.name?.charAt(0) || 'U'}
-                        </div>
-                    </Link>
-                </div>
-
-                {/* Mobile Menu */}
-                <button className="md:hidden p-2 rounded-lg bg-[#111111] border border-[#242424]">
-                    <Menu className="w-5 h-5 text-white" />
-                </button>
             </div>
 
             {/* Decorative Branch - Top Right */}

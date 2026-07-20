@@ -12,9 +12,7 @@ interface TopNavProps {
     avatar?: string
   }
   onSearch?: (query: string) => void
-  onQuickAdd?: () => void
   onNotificationsClick?: () => void
-  onProfileClick?: () => void
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -23,9 +21,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   notificationCount = 0,
   user,
   onSearch,
-  onQuickAdd,
   onNotificationsClick,
-  onProfileClick,
 }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
@@ -37,13 +33,12 @@ export const TopNav: React.FC<TopNavProps> = ({
     }
   }
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
+  const handleNotificationsClick = () => {
+    if (onNotificationsClick) {
+      onNotificationsClick()
+    } else {
+      router.visit('/notifications')
+    }
   }
 
   return (
@@ -93,18 +88,9 @@ export const TopNav: React.FC<TopNavProps> = ({
             )}
           </form>
 
-          {/* Quick Add */}
-          <button
-            onClick={onQuickAdd}
-            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-[#5CB85C] text-black text-sm font-medium rounded-xl hover:bg-[#70C970] transition-all duration-200"
-          >
-            <Icon icon="mdi:plus" className="h-4 w-4" />
-            <span>Add</span>
-          </button>
-
           {/* Notifications */}
           <button
-            onClick={onNotificationsClick}
+            onClick={handleNotificationsClick}
             className="relative text-[#9A9A9A] hover:text-white transition-colors duration-200 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Notifications"
           >
@@ -113,33 +99,6 @@ export const TopNav: React.FC<TopNavProps> = ({
               <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FF5A5A] rounded-full text-[10px] text-white flex items-center justify-center font-medium">
                 {notificationCount > 9 ? '9+' : notificationCount}
               </span>
-            )}
-          </button>
-
-          {/* Profile */}
-          <button
-            onClick={() => {
-              if (onProfileClick) {
-                onProfileClick()
-              } else {
-                router.visit('/profile')
-              }
-            }}
-            className="w-8 h-8 rounded-full bg-[#1A1A1A] border border-[#242424] overflow-hidden hover:border-[#5CB85C] transition-all duration-200 flex items-center justify-center"
-            aria-label="Profile"
-          >
-            {user?.avatar ? (
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-[#5CB85C]/20 flex items-center justify-center">
-                <span className="text-xs font-medium text-[#5CB85C]">
-                  {user?.name ? getInitials(user.name) : <Icon icon="mdi:account" className="h-4 w-4 text-[#9A9A9A]" />}
-                </span>
-              </div>
             )}
           </button>
         </div>

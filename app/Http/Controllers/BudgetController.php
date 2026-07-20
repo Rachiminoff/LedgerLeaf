@@ -67,6 +67,255 @@ class BudgetController extends Controller
     }
 
     /**
+     * Create a new pocket.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function store(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'nullable|string|max:500',
+                'icon' => 'nullable|string|max:50',
+                'color' => 'nullable|string|max:20',
+                'allocated' => 'nullable|numeric|min:0',
+            ]);
+
+            $user = $request->user();
+
+            // Check if user has enough safe balance
+            $allocatedAmount = $validated['allocated'] ?? 0;
+            if ($allocatedAmount > 0 && ($user->safe_balance ?? 0) < $allocatedAmount) {
+                return response()->json([
+                    'message' => 'Insufficient safe balance',
+                    'available' => $user->safe_balance,
+                    'requested' => $allocatedAmount
+                ], 400);
+            }
+
+            DB::transaction(function () use ($user, $validated, $allocatedAmount) {
+                // Create the pocket
+                $pocket = Pocket::create([
+                    'user_id' => $user->id,
+                    'name' => $validated['name'],
+                    'description' => $validated['description'] ?? null,
+                    'icon' => $validated['icon'] ?? 'mdi:folder',
+                    'color' => $validated['color'] ?? '#5CB85C',
+                    'allocated' => $allocatedAmount,
+                    'balance' => $allocatedAmount,
+                    'spent' => 0,
+                    'is_archived' => false,
+                ]);
+
+                // If there's an allocation, deduct from safe balance
+                if ($allocatedAmount > 0) {
+                    $user->safe_balance -= $allocatedAmount;
+                    $user->save();
+
+                    // Create allocation record
+                    Allocation::create([
+                        'user_id' => $user->id,
+                        'pocket_id' => $pocket->id,
+                        'amount' => $allocatedAmount,
+                        'type' => 'allocate',
+                        'description' => "Allocated ₱" . number_format($allocatedAmount, 2) . " to {$pocket->name}",
+                    ]);
+                }
+            });
+
+            return response()->json([
+                'message' => 'Pocket created successfully',
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'line' => $e->getLine()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update a pocket.
+     * 
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function update(Request $request, $id)
+    {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'nullable|string|max:500',
+                'icon' => 'nullable|string|max:50',
+                'color' => 'nullable|string|max:20',
+                'allocated' => 'nullable|numeric|min:0',
+            ]);
+
+            $user = $request->user();
+            $pocket = Pocket::where('user_id', $user->id)->where('id', $id)->first();
+
+            if (!$pocket) {
+                return response()->json(['message' => 'Pocket not found'], 404);
+            }
+
+            $newAllocatedAmount = $validated['allocated'] ?? $pocket->allocated;
+            $oldAllocatedAmount = $pocket->allocated;
+            $difference = $newAllocatedAmount - $oldAllocatedAmount;
+
+            DB::transaction(function () use ($user, $pocket, $validated, $newAllocatedAmount, $difference) {
+                // Update pocket details
+                $pocket->name = $validated['name'];
+                $pocket->description = $validated['description'] ?? $pocket->description;
+                $pocket->icon = $validated['icon'] ?? $pocket->icon;
+                $pocket->color = $validated['color'] ?? $pocket->color;
+                $pocket->allocated = $newAllocatedAmount;
+
+                // Adjust balance if allocation changed
+                if ($difference != 0) {
+                    $pocket->balance += $difference;
+                    
+                    // Adjust safe balance
+                    if ($difference > 0) {
+                        // Increasing allocation - deduct from safe balance
+                        if (($user->safe_balance ?? 0) < $difference) {
+                            throw new \Exception('Insufficient safe balance');
+                        }
+                        $user->safe_balance -= $difference;
+                    } else {
+                        // Decreasing allocation - refund to safe balance
+                        $user->safe_balance += abs($difference);
+                    }
+                    $user->save();
+
+                    // Create allocation record for the change
+                    Allocation::create([
+                        'user_id' => $user->id,
+                        'pocket_id' => $pocket->id,
+                        'amount' => abs($difference),
+                        'type' => $difference > 0 ? 'allocate' : 'refund',
+                        'description' => ($difference > 0 ? 'Increased' : 'Decreased') . " allocation by ₱" . number_format(abs($difference), 2),
+                    ]);
+                }
+
+                $pocket->save();
+            });
+
+            return response()->json([
+                'message' => 'Pocket updated successfully',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'line' => $e->getLine()
+            ], 500);
+        }
+    }
+
+    /**
+     * Archive a pocket.
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function archive(Request $request, $id)
+    {
+        try {
+            $user = $request->user();
+            $pocket = Pocket::where('user_id', $user->id)->where('id', $id)->first();
+
+            if (!$pocket) {
+                return response()->json(['message' => 'Pocket not found'], 404);
+            }
+
+            DB::transaction(function () use ($user, $pocket) {
+                // Refund remaining balance to safe balance
+                $refundAmount = $pocket->balance;
+                if ($refundAmount > 0) {
+                    $user->safe_balance += $refundAmount;
+                    $user->save();
+
+                    Allocation::create([
+                        'user_id' => $user->id,
+                        'pocket_id' => $pocket->id,
+                        'amount' => $refundAmount,
+                        'type' => 'refund',
+                        'description' => "Refunded ₱" . number_format($refundAmount, 2) . " from {$pocket->name}",
+                    ]);
+                }
+
+                $pocket->is_archived = true;
+                $pocket->deleted_at = now();
+                $pocket->save();
+            });
+
+            return response()->json([
+                'message' => 'Pocket archived successfully',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'line' => $e->getLine()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete a pocket permanently.
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function destroy(Request $request, $id)
+    {
+        try {
+            $user = $request->user();
+            $pocket = Pocket::where('user_id', $user->id)->where('id', $id)->first();
+
+            if (!$pocket) {
+                return response()->json(['message' => 'Pocket not found'], 404);
+            }
+
+            DB::transaction(function () use ($user, $pocket) {
+                // Refund remaining balance to safe balance
+                $refundAmount = $pocket->balance;
+                if ($refundAmount > 0) {
+                    $user->safe_balance += $refundAmount;
+                    $user->save();
+
+                    Allocation::create([
+                        'user_id' => $user->id,
+                        'pocket_id' => $pocket->id,
+                        'amount' => $refundAmount,
+                        'type' => 'refund',
+                        'description' => "Refunded ₱" . number_format($refundAmount, 2) . " from {$pocket->name}",
+                    ]);
+                }
+
+                // Delete the pocket permanently
+                $pocket->forceDelete();
+            });
+
+            return response()->json([
+                'message' => 'Pocket deleted successfully',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'line' => $e->getLine()
+            ], 500);
+        }
+    }
+
+    /**
      * Allocate funds from safe balance to a pocket
      * Also logs the allocation in audit log
      */

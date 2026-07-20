@@ -7,6 +7,7 @@ import { AddFundsSummary } from '@/Components/AddFunds/AddFundsSummary'
 import { AddFundsInfo } from '@/Components/AddFunds/AddFundsInfo'
 import { ConfirmModal } from '@/Components/AddFunds/ConfirmModal'
 import { SuccessModal } from '@/Components/AddFunds/SuccessModal'
+import { ErrorModal } from '@/Components/AddFunds/ErrorModal'
 
 interface PageProps {
   auth: {
@@ -39,7 +40,9 @@ const AddFunds: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [showErrorModal, setShowErrorModal] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
   const [formData, setFormData] = useState({
     destination: 'safe_balance',
     amount: '',
@@ -49,6 +52,8 @@ const AddFunds: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submittedAmount, setSubmittedAmount] = useState(0)
   const [submittedDestination, setSubmittedDestination] = useState('')
+  const [submittedDescription, setSubmittedDescription] = useState('')
+  const [submittedDate, setSubmittedDate] = useState('')
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -89,6 +94,8 @@ const AddFunds: React.FC = () => {
     if (!validateForm()) return
     setSubmittedAmount(parseFloat(formData.amount))
     setSubmittedDestination(formData.destination)
+    setSubmittedDescription(formData.description || '')
+    setSubmittedDate(formData.date)
     setShowConfirmModal(true)
   }
 
@@ -114,6 +121,10 @@ const AddFunds: React.FC = () => {
       },
       onError: (errors) => {
         setIsSubmitting(false)
+        // Check if there's a specific error message
+        const errorMsg = errors.message || errors.error || 'Something went wrong. Please try again.'
+        setErrorMessage(errorMsg)
+        setShowErrorModal(true)
         setErrors(errors)
       },
     })
@@ -123,6 +134,10 @@ const AddFunds: React.FC = () => {
     setShowSuccessModal(false)
     // Navigate back to dashboard with fresh data
     router.visit('/dashboard', { preserveState: false })
+  }
+
+  const handleErrorClose = () => {
+    setShowErrorModal(false)
   }
 
   const handleBack = () => {
@@ -242,6 +257,8 @@ const AddFunds: React.FC = () => {
         onConfirm={handleConfirm}
         amount={submittedAmount}
         destination={submittedDestination}
+        description={submittedDescription}
+        date={submittedDate}
         isSubmitting={isSubmitting}
         destinations={destinations}
       />
@@ -249,6 +266,17 @@ const AddFunds: React.FC = () => {
       <SuccessModal
         isOpen={showSuccessModal}
         onClose={handleSuccessClose}
+        amount={submittedAmount}
+        destination={submittedDestination}
+        description={submittedDescription}
+        date={submittedDate}
+        destinations={destinations}
+      />
+
+      <ErrorModal
+        isOpen={showErrorModal}
+        onClose={handleErrorClose}
+        errorMessage={errorMessage}
         amount={submittedAmount}
         destination={submittedDestination}
         destinations={destinations}

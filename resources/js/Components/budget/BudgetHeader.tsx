@@ -13,19 +13,6 @@ export default function BudgetHeader() {
                         Plan and organize every peso before you spend it.
                     </p>
                 </div>
-
-                <div className="hidden md:flex items-center gap-4">
-                    <button className="p-2 rounded-lg bg-[#111111] border border-[#242424] hover:border-[#5CB85C] transition-colors">
-                        <Search className="w-5 h-5 text-[#9A9A9A]" />
-                    </button>
-                    <button className="p-2 rounded-lg bg-[#111111] border border-[#242424] hover:border-[#5CB85C] transition-colors relative">
-                        <Bell className="w-5 h-5 text-[#9A9A9A]" />
-                        <span className="absolute top-1 right-1 w-2 h-2 bg-[#5CB85C] rounded-full" />
-                    </button>
-                    <Link href="/profile" className="p-2 rounded-lg bg-[#111111] border border-[#242424] hover:border-[#5CB85C] transition-colors">
-                        <User className="w-5 h-5 text-[#9A9A9A]" />
-                    </Link>
-                </div>
             </div>
 
             {/* Decorative Branch */}

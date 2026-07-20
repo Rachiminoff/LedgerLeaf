@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "question": "What is Safe Balance?",
+    "answer": "Safe Balance is the portion of your money that has not yet been allocated to any budget pocket or savings goal. Think of it as your available disposable income. You can use it to create new pockets, fund existing pockets, or contribute to your savings goals.",
+    "category": "core-concepts"
+  },
+  {
+    "id": 2,
+    "question": "What is Total Balance?",
+    "answer": "Total Balance represents all of your money within LedgerLeaf. It includes your Safe Balance, money allocated to budget pockets, and money set aside in savings goals. Expenses reduce your Total Balance, while moving money between pockets or savings does not.",
+    "category": "core-concepts"
+  },
+  {
+    "id": 3,
+    "question": "How do budget pockets work?",
+    "answer": "Budget pockets are virtual allocations of your money for specific purposes, such as Food, Transportation, Bills, or Entertainment. Instead of spending directly from your Total Balance, every expense is deducted from its assigned pocket, helping you stay within your planned budget.",
+    "category": "pockets"
+  },
+  {
+    "id": 4,
+    "question": "Why should I use pockets instead of tracking expenses normally?",
+    "answer": "LedgerLeaf follows a proactive budgeting approach. Instead of asking where your money went after spending, you decide where your money should go before spending. This encourages better financial planning and reduces overspending.",
+    "category": "core-concepts"
+  },
+  {
+    "id": 5,
+    "question": "Why can't I add money directly to Savings from my Total Balance?",
+    "answer": "Savings can only be funded using your Safe Balance. Since Total Balance includes money already allocated to pockets and existing savings goals, allowing direct transfers could result in the same money being allocated twice.",
+    "category": "savings"
+  },
+  {
+    "id": 6,
+    "question": "Can I move money between pockets?",
+    "answer": "Yes. You can transfer funds between budget pockets whenever your spending priorities change. The transferred amount is deducted from the source pocket and added to the destination pocket without affecting your Total Balance.",
+    "category": "pockets"
+  },
+  {
+    "id": 7,
+    "question": "Can I edit or delete an expense?",
+    "answer": "Yes. Expenses can be updated or removed from the Expenses module. Any changes automatically update the associated pocket balance, financial summaries, and analytics to ensure your records remain accurate.",
+    "category": "expenses"
+  },
+  {
+    "id": 8,
+    "question": "What happens when I delete an expense?",
+    "answer": "Deleting an expense restores the deducted amount back to its original pocket and updates your financial summaries accordingly. This ensures your balances remain synchronized.",
+    "category": "expenses"
+  },
+  {
+    "id": 9,
+    "question": "What happens when I archive a pocket?",
+    "answer": "Archiving a pocket removes it from your active budgeting workspace while preserving its history. If the pocket still contains available funds, the remaining balance is returned to your Safe Balance before archiving.",
+    "category": "pockets"
+  },
+  {
+    "id": 10,
+    "question": "Can I create multiple savings goals?",
+    "answer": "Yes. LedgerLeaf supports multiple savings goals, each with its own target amount, current balance, and progress tracking. You can contribute to any goal whenever you have available Safe Balance.",
+    "category": "savings"
+  },
+  {
+    "id": 11,
+    "question": "Can I withdraw money from a savings goal?",
+    "answer": "Yes. Money withdrawn from a savings goal is returned directly to your Safe Balance, making it available for budgeting, spending, or future savings.",
+    "category": "savings"
+  },
+  {
+    "id": 12,
+    "question": "Why can't I record an expense?",
+    "answer": "Expenses can only be recorded if the selected budget pocket contains enough available funds. If the pocket balance is insufficient, you'll need to allocate or transfer additional funds before recording the expense.",
+    "category": "expenses"
+  },
+  {
+    "id": 13,
+    "question": "How are balances updated?",
+    "answer": "LedgerLeaf automatically recalculates your balances whenever you add funds, allocate money to pockets, record expenses, transfer funds, or contribute to savings. All financial summaries remain synchronized across the application.",
+    "category": "core-concepts"
+  },
+  {
+    "id": 14,
+    "question": "What is shown on the Dashboard?",
+    "answer": "The Dashboard provides a quick overview of your current financial status, including Total Balance, Safe Balance, pocket summaries, savings progress, recent transactions, and budget health indicators.",
+    "category": "dashboard"
+  },
+  {
+    "id": 15,
+    "question": "What is the difference between the Dashboard and Analytics?",
+    "answer": "The Dashboard focuses on your current financial snapshot, while Analytics explores long-term trends and spending behavior through charts, comparisons, and financial insights generated from your historical data.",
+    "category": "analytics"
+  },
+  {
+    "id": 16,
+    "question": "Can I export my financial data?",
+    "answer": "Yes. LedgerLeaf allows you to export financial reports in PDF, Excel, and CSV formats. Reports can include financial summaries, pocket information, savings progress, expenses, and analytics based on your selected date range.",
+    "category": "analytics"
+  },
+  {
+    "id": 17,
+    "question": "Is my data updated automatically?",
+    "answer": "Yes. Whenever you add funds, manage pockets, record expenses, or update savings, LedgerLeaf automatically synchronizes your financial summaries, dashboard statistics, analytics, and reports without requiring a manual refresh.",
+    "category": "general"
+  },
+  {
+    "id": 18,
+    "question": "Can I use LedgerLeaf on my phone?",
+    "answer": "Yes. LedgerLeaf is fully responsive and optimized for desktop, tablet, and mobile devices, providing a consistent experience across different screen sizes.",
+    "category": "general"
+  },
+  {
+    "id": 19,
+    "question": "How do I get started with LedgerLeaf?",
+    "answer": "A simple workflow is to add funds to your account, allocate money into budget pockets, record expenses from those pockets, create savings goals using your Safe Balance, and review your financial progress through the Dashboard and Analytics.",
+    "category": "getting-started"
+  },
+  {
+    "id": 20,
+    "question": "What budgeting method does LedgerLeaf use?",
+    "answer": "LedgerLeaf is inspired by the envelope budgeting method. Instead of treating your money as one large balance, you assign funds to dedicated budget pockets before spending, making it easier to stay organized and avoid overspending.",
+    "category": "core-concepts"
+  }
+]

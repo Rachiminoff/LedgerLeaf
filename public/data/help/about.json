@@ -1,0 +1,25 @@
+{
+  "applicationName": "LedgerLeaf",
+  "description": "LedgerLeaf is a modern full-stack personal finance management application built around a pocket-based budgeting system. It helps users organize their finances by allocating money into dedicated pockets, tracking expenses, managing savings goals, and monitoring their overall financial health through a clean, responsive interface optimized for both desktop and mobile devices.",
+  "mission": "Our mission is to make personal finance more intentional, accessible, and easier to understand. LedgerLeaf encourages users to plan their spending before it happens, empowering them to build healthier financial habits through thoughtful budgeting and clear financial insights.",
+  "keyFeatures": [
+    {
+      "title": "Pocket-Based Budgeting",
+      "description": "Allocate available funds into customizable budgeting pockets for different spending categories, making every expense intentional and organized."
+    },
+    {
+      "title": "Savings Management",
+      "description": "Create savings goals and grow them using your available Safe Balance while monitoring your progress over time."
+    },
+    {
+      "title": "Expense Tracking",
+      "description": "Record, organize, and review expenses by pocket to maintain accurate budgets and gain a better understanding of your spending habits."
+    },
+    {
+      "title": "Financial Analytics",
+      "description": "Explore visual reports and spending trends that help transform financial data into meaningful insights for smarter decision-making."
+    }
+  ],
+  "philosophy": "LedgerLeaf is built on the belief that budgeting should happen before spending. Instead of treating money as a single balance, users allocate available funds into purpose-driven pockets and savings goals before making purchases. This proactive approach promotes mindful spending, improves financial awareness, and makes it easier to stay within budget while working toward long-term goals.",
+  "background": "LedgerLeaf represents the evolution of an earlier mobile budgeting concept into a modern web application. Building upon the same pocket-based budgeting philosophy, it introduces a robust Laravel backend, relational database support, persistent data management, and a responsive interface designed to deliver a seamless experience across both desktop and mobile platforms."
+}

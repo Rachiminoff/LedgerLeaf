@@ -12,6 +12,7 @@ import DepositModal from '@/Components/savings/DepositModal'
 import WithdrawModal from '@/Components/savings/WithdrawModal'
 import GoalDetailsModal from '@/Components/savings/GoalDetailsModal'
 import EmptyState from '@/Components/savings/EmptyState'
+import ConfirmModal from '@/Components/ui/ConfirmModal'
 import { useSavings } from '@/hooks/useSavings'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { toastSuccess, toastError, toastWarning } from '@/Components/ui/Toast'
@@ -34,8 +35,17 @@ interface PageProps {
     recent_transactions: any[]
 }
 
+interface ConfirmModalConfig {
+    isOpen: boolean
+    title: string
+    message: string
+    action: () => void
+    type: 'danger' | 'warning' | 'info'
+    confirmText: string
+}
+
 export default function SavingsIndex() {
-    const { auth, goals, summary, recent_transactions } = usePage<PageProps>().props
+    const { auth, goals: initialGoals, summary: initialSummary, recent_transactions } = usePage<PageProps>().props
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [isGoalModalOpen, setIsGoalModalOpen] = useState(false)
     const [isDepositModalOpen, setIsDepositModalOpen] = useState(false)
@@ -43,9 +53,20 @@ export default function SavingsIndex() {
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
     const [selectedGoal, setSelectedGoal] = useState<any>(null)
     const [editingGoal, setEditingGoal] = useState<any>(null)
-    const [loading, setLoading] = useState(false)
+    const [localLoading, setLocalLoading] = useState(false)
+
+    // Confirmation Modal State
+    const [confirmModal, setConfirmModal] = useState<ConfirmModalConfig>({
+        isOpen: false,
+        title: '',
+        message: '',
+        action: () => {},
+        type: 'danger',
+        confirmText: 'Confirm',
+    })
 
     const isMobile = useMediaQuery('(max-width: 768px)')
+    const isTablet = useMediaQuery('(max-width: 1024px)')
 
     const {
         fetchGoals,
@@ -55,90 +76,161 @@ export default function SavingsIndex() {
         deleteGoal,
         depositFunds,
         withdrawFunds,
+        refundGoalFunds,
+        loading: hookLoading,
     } = useSavings()
+
+    const loading = localLoading || hookLoading
 
     useEffect(() => {
         fetchGoals()
     }, [])
 
+    // ─── Close All Modals ───────────────────────────────────────────
+    const closeAllModals = () => {
+        setIsGoalModalOpen(false)
+        setIsDepositModalOpen(false)
+        setIsWithdrawModalOpen(false)
+        setIsDetailsModalOpen(false)
+        setSelectedGoal(null)
+        setEditingGoal(null)
+    }
+
+    // ─── Refresh Data ──────────────────────────────────────────────
+    const refreshData = async () => {
+        await fetchGoals()
+        // Reload the page props to get updated summary
+        router.reload({ only: ['goals', 'summary', 'recent_transactions'] })
+    }
+
     const handleLogout = () => {
-        router.post('/logout')
+        setConfirmModal({
+            isOpen: true,
+            title: 'Logout',
+            message: 'Are you sure you want to log out?',
+            type: 'warning',
+            confirmText: 'Logout',
+            action: () => {
+                setConfirmModal({ ...confirmModal, isOpen: false })
+                router.post('/logout')
+            },
+        })
     }
 
     const handleCreateGoal = async (data: any) => {
         try {
-            setLoading(true)
+            setLocalLoading(true)
             await createGoal(data)
-            toastSuccess('Savings goal created successfully! 🎯')
+            toastSuccess('Savings goal created successfully!')
             setIsGoalModalOpen(false)
-            fetchGoals()
+            setSelectedGoal(null)
+            await refreshData()
         } catch (err: any) {
             toastError(err.message || 'Failed to create goal')
         } finally {
-            setLoading(false)
+            setLocalLoading(false)
         }
     }
 
     const handleUpdateGoal = async (data: any) => {
         try {
-            setLoading(true)
+            setLocalLoading(true)
             await updateGoal(selectedGoal.id, data)
-            toastSuccess('Goal updated successfully! ✏️')
+            toastSuccess('Goal updated successfully!')
             setIsGoalModalOpen(false)
-            fetchGoals()
+            setSelectedGoal(null)
+            await refreshData()
         } catch (err: any) {
             toastError(err.message || 'Failed to update goal')
         } finally {
-            setLoading(false)
+            setLocalLoading(false)
         }
     }
 
     const handleDeposit = async (data: any) => {
         try {
-            setLoading(true)
+            setLocalLoading(true)
             await depositFunds(selectedGoal.id, data)
-            toastSuccess(`Deposited ₱${data.amount.toFixed(2)} successfully! 💰`)
+            toastSuccess(`Deposited ₱${parseFloat(data.amount).toFixed(2)} successfully!`)
             setIsDepositModalOpen(false)
-            fetchGoals()
+            setSelectedGoal(null)
+            await refreshData()
         } catch (err: any) {
             toastError(err.message || 'Failed to deposit')
         } finally {
-            setLoading(false)
+            setLocalLoading(false)
         }
     }
 
     const handleWithdraw = async (data: any) => {
         try {
-            setLoading(true)
+            setLocalLoading(true)
             await withdrawFunds(selectedGoal.id, data)
-            toastSuccess(`Withdrew ₱${data.amount.toFixed(2)} successfully! 💳`)
+            toastSuccess(`Withdrew ₱${parseFloat(data.amount).toFixed(2)} successfully!`)
             setIsWithdrawModalOpen(false)
-            fetchGoals()
+            setSelectedGoal(null)
+            await refreshData()
         } catch (err: any) {
             toastError(err.message || 'Failed to withdraw')
         } finally {
-            setLoading(false)
+            setLocalLoading(false)
         }
     }
 
-    const handleArchive = async (id: number) => {
-        try {
-            await archiveGoal(id)
-            toastSuccess('Goal archived successfully! 📦')
-            fetchGoals()
-        } catch (err: any) {
-            toastError(err.message || 'Failed to archive goal')
-        }
+    const handleArchive = (id: number) => {
+        const goal = initialGoals.find((g: any) => g.id === id)
+        setConfirmModal({
+            isOpen: true,
+            title: 'Archive Goal',
+            message: `Are you sure you want to archive "${goal?.name}"? Archived goals will be hidden from your active list but can be restored later.`,
+            type: 'warning',
+            confirmText: 'Archive',
+            action: async () => {
+                setConfirmModal({ ...confirmModal, isOpen: false })
+                try {
+                    await archiveGoal(id)
+                    toastSuccess('Goal archived successfully!')
+                    await refreshData()
+                } catch (err: any) {
+                    toastError(err.message || 'Failed to archive goal')
+                }
+            },
+        })
     }
 
-    const handleDelete = async (id: number) => {
-        try {
-            await deleteGoal(id)
-            toastSuccess('Goal deleted successfully! 🗑️')
-            fetchGoals()
-        } catch (err: any) {
-            toastError(err.message || 'Failed to delete goal')
-        }
+    const handleDelete = (id: number) => {
+        const goal = initialGoals.find((g: any) => g.id === id)
+        // Convert to number and handle null/undefined
+        const currentAmount = parseFloat(goal?.current_amount) || 0
+        
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Goal',
+            message: `Are you sure you want to permanently delete "${goal?.name}"?${
+                currentAmount > 0 
+                    ? `\n\n💰 ₱${currentAmount.toFixed(2)} will be refunded to your Safe Balance.` 
+                    : ''
+            }${currentAmount === 0 ? '\n\nThis action cannot be undone.' : ''}`,
+            type: 'danger',
+            confirmText: 'Delete',
+            action: async () => {
+                setConfirmModal({ ...confirmModal, isOpen: false })
+                try {
+                    // First refund the funds if there's any money in the goal
+                    if (currentAmount > 0) {
+                        await refundGoalFunds(id, currentAmount)
+                        toastSuccess(`₱${currentAmount.toFixed(2)} refunded to Safe Balance`)
+                    }
+                    
+                    // Then delete the goal
+                    await deleteGoal(id)
+                    toastSuccess('Goal deleted successfully!')
+                    await refreshData()
+                } catch (err: any) {
+                    toastError(err.message || 'Failed to delete goal')
+                }
+            },
+        })
     }
 
     const handleViewGoal = (goal: any) => {
@@ -148,6 +240,7 @@ export default function SavingsIndex() {
 
     const handleEditGoal = (goal: any) => {
         setSelectedGoal(goal)
+        setEditingGoal(goal)
         setIsGoalModalOpen(true)
     }
 
@@ -161,26 +254,19 @@ export default function SavingsIndex() {
         setIsWithdrawModalOpen(true)
     }
 
-    const handleArchiveWithConfirm = (id: number) => {
-        if (confirm('Are you sure you want to archive this goal?')) {
-            handleArchive(id)
-        }
-    }
-
-    const handleDeleteWithConfirm = (id: number) => {
-        if (confirm('Are you sure you want to delete this goal? This action cannot be undone.')) {
-            handleDelete(id)
-        }
-    }
-
-    const activeGoals = goals.filter((g: any) => !g.is_archived)
+    const activeGoals = initialGoals.filter((g: any) => !g.is_archived)
 
     return (
         <>
             <Head title="Savings | LedgerLeaf" />
 
             <div className="min-h-screen bg-[#000000] font-['Inter',system-ui,sans-serif]">
-                <Sidebar activePage="savings" onLogout={handleLogout} />
+                <Sidebar 
+                    activePage="savings" 
+                    onLogout={handleLogout}
+                    isMobileOpen={isMobileMenuOpen}
+                    onMobileClose={() => setIsMobileMenuOpen(false)}
+                />
 
                 <div className="lg:ml-[280px] min-h-screen">
                     <TopNav
@@ -189,18 +275,18 @@ export default function SavingsIndex() {
                         notificationCount={0}
                     />
 
-                    <main className="p-4 sm:p-6 lg:p-8">
+                    <main className="p-3 sm:p-4 md:p-6 lg:p-8">
                         <div className="max-w-[1400px] mx-auto">
-                            {/* Header */}
-                            <SavingsHeader />
+                            {/* Header - Mobile optimized with Create Goal button */}
+                            <SavingsHeader onCreateGoal={() => setIsGoalModalOpen(true)} />
 
-                            {/* Summary */}
-                            <SavingsSummary summary={summary} />
+                            {/* Summary - Mobile optimized grid */}
+                            <SavingsSummary summary={initialSummary} />
 
-                            {/* Main Grid */}
-                            <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-3'} gap-6 mt-6`}>
-                                {/* Left Column - 2/3 */}
-                                <div className={`${isMobile ? 'col-span-1' : 'col-span-2'} space-y-6`}>
+                            {/* Main Grid - Mobile optimized */}
+                            <div className={`grid ${isMobile ? 'grid-cols-1' : 'lg:grid-cols-3'} gap-4 md:gap-6 mt-4 md:mt-6`}>
+                                {/* Left Column - Goal List */}
+                                <div className={`${isMobile ? 'col-span-1' : 'lg:col-span-2'} space-y-4 md:space-y-6`}>
                                     {activeGoals.length === 0 ? (
                                         <EmptyState onCreateGoal={() => setIsGoalModalOpen(true)} />
                                     ) : (
@@ -208,54 +294,83 @@ export default function SavingsIndex() {
                                             goals={activeGoals}
                                             onViewGoal={handleViewGoal}
                                             onEditGoal={handleEditGoal}
-                                            onArchiveGoal={handleArchiveWithConfirm}
-                                            onDeleteGoal={handleDeleteWithConfirm}
+                                            onArchiveGoal={handleArchive}
+                                            onDeleteGoal={handleDelete}
                                             onDeposit={handleDepositClick}
                                             onWithdraw={handleWithdrawClick}
+                                            isMobile={isMobile}
                                         />
                                     )}
                                 </div>
 
-                                {/* Right Column - 1/3 */}
-                                <div className={`${isMobile ? 'col-span-1' : 'col-span-1'} space-y-6`}>
-                                    <SavingsStats goals={goals} />
-                                    <SavingsInsights goals={goals} summary={summary} />
-                                </div>
+                                {/* Right Column - Stats & Insights */}
+                                {!isMobile && (
+                                    <div className="lg:col-span-1 space-y-4 md:space-y-6">
+                                        <SavingsStats goals={initialGoals} />
+                                        <SavingsInsights goals={initialGoals} summary={initialSummary} />
+                                    </div>
+                                )}
                             </div>
+
+                            {/* Mobile Stats & Insights - Shown below the list on mobile */}
+                            {isMobile && (
+                                <div className="mt-4 md:mt-6 space-y-4">
+                                    <SavingsStats goals={initialGoals} />
+                                    <SavingsInsights goals={initialGoals} summary={initialSummary} />
+                                </div>
+                            )}
                         </div>
                     </main>
                 </div>
 
-                {/* Modals */}
+                {/* ─── Modals ────────────────────────────────────────── */}
+
+                {/* Goal Create/Edit Modal */}
                 <GoalModal
                     isOpen={isGoalModalOpen}
-                    onClose={() => setIsGoalModalOpen(false)}
+                    onClose={() => {
+                        setIsGoalModalOpen(false)
+                        setSelectedGoal(null)
+                        setEditingGoal(null)
+                    }}
                     onSave={selectedGoal ? handleUpdateGoal : handleCreateGoal}
                     mode={selectedGoal ? 'edit' : 'create'}
                     goal={selectedGoal}
                     loading={loading}
                 />
 
+                {/* Deposit Modal */}
                 <DepositModal
                     isOpen={isDepositModalOpen}
-                    onClose={() => setIsDepositModalOpen(false)}
+                    onClose={() => {
+                        setIsDepositModalOpen(false)
+                        setSelectedGoal(null)
+                    }}
                     onDeposit={handleDeposit}
                     goal={selectedGoal}
-                    safeBalance={summary.safe_balance}
+                    safeBalance={initialSummary?.safe_balance || 0}
                     loading={loading}
                 />
 
+                {/* Withdraw Modal */}
                 <WithdrawModal
                     isOpen={isWithdrawModalOpen}
-                    onClose={() => setIsWithdrawModalOpen(false)}
+                    onClose={() => {
+                        setIsWithdrawModalOpen(false)
+                        setSelectedGoal(null)
+                    }}
                     onWithdraw={handleWithdraw}
                     goal={selectedGoal}
                     loading={loading}
                 />
 
+                {/* Goal Details Modal */}
                 <GoalDetailsModal
                     isOpen={isDetailsModalOpen}
-                    onClose={() => setIsDetailsModalOpen(false)}
+                    onClose={() => {
+                        setIsDetailsModalOpen(false)
+                        setSelectedGoal(null)
+                    }}
                     goal={selectedGoal}
                     onDeposit={() => {
                         setIsDetailsModalOpen(false)
@@ -269,6 +384,17 @@ export default function SavingsIndex() {
                         setIsDetailsModalOpen(false)
                         setIsGoalModalOpen(true)
                     }}
+                />
+
+                {/* Confirmation Modal */}
+                <ConfirmModal
+                    isOpen={confirmModal.isOpen}
+                    onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                    onConfirm={confirmModal.action}
+                    title={confirmModal.title}
+                    message={confirmModal.message}
+                    type={confirmModal.type}
+                    confirmText={confirmModal.confirmText}
                 />
             </div>
         </>

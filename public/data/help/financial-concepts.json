@@ -1,0 +1,38 @@
+[
+  {
+    "title": "Safe Balance",
+    "icon": "mdi:shield-check-outline",
+    "explanation": "Safe Balance represents the amount of money that has not yet been allocated to budget pockets or savings goals. It is your available disposable balance that can still be budgeted, saved, or reserved for future use.",
+    "example": "If your Total Balance is ₱10,000 and you've allocated ₱6,500 to pockets and ₱1,500 to savings, your remaining Safe Balance is ₱2,000."
+  },
+  {
+    "title": "Total Balance",
+    "icon": "mdi:wallet-outline",
+    "explanation": "Total Balance is the total amount of money you currently own within LedgerLeaf. It includes your Safe Balance, the funds allocated across all pockets, and the money reserved for savings goals.",
+    "example": "Safe Balance (₱2,000) + Pocket Balances (₱6,500) + Savings (₱1,500) = Total Balance (₱10,000)."
+  },
+  {
+    "title": "Budget Pockets",
+    "icon": "mdi:folder-multiple-outline",
+    "explanation": "Budget Pockets allow you to assign portions of your Safe Balance to specific spending categories before making purchases. Giving every peso a purpose helps you stay organized and spend more intentionally.",
+    "example": "Allocate ₱3,000 to Food, ₱2,000 to Transportation, and ₱1,500 to Utilities. These funds are now reserved for their respective categories."
+  },
+  {
+    "title": "Savings Goals",
+    "icon": "mdi:piggy-bank-outline",
+    "explanation": "Savings Goals help you reserve money for future financial objectives. Contributions come exclusively from your Safe Balance, ensuring your savings remain separate from your everyday spending budget.",
+    "example": "Create an Emergency Fund with a target of ₱50,000. After contributing ₱12,500, LedgerLeaf displays a 25% completion progress."
+  },
+  {
+    "title": "Expenses",
+    "icon": "mdi:credit-card-outline",
+    "explanation": "Expenses represent completed purchases recorded against a specific budget pocket. Recording an expense decreases both the selected pocket's balance and your Total Balance, ensuring your financial records remain accurate.",
+    "example": "A ₱450 grocery purchase recorded under the Food pocket reduces both the Food pocket balance and your Total Balance by ₱450."
+  },
+  {
+    "title": "Financial Analytics",
+    "icon": "mdi:chart-line",
+    "explanation": "Analytics transform your financial records into meaningful insights by summarizing spending trends, savings progress, pocket utilization, and overall financial performance over time.",
+    "example": "View monthly spending trends, identify your highest spending categories, compare savings progress across months, and discover insights that help improve your budgeting habits."
+  }
+]

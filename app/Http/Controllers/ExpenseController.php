@@ -56,8 +56,16 @@ class ExpenseController extends Controller
             }
 
             $query = Expense::with(['pocket'])
-                ->where('user_id', $user->id)
-                ->where('is_archived', false);
+                ->where('user_id', $user->id);
+
+            // Handle is_archived filter
+            if ($request->has('is_archived')) {
+                $isArchived = filter_var($request->is_archived, FILTER_VALIDATE_BOOLEAN);
+                $query->where('is_archived', $isArchived);
+            } else {
+                // Default: show only active expenses (not archived)
+                $query->where('is_archived', false);
+            }
 
             // Apply filters
             if ($request->filled('search')) {
@@ -489,7 +497,7 @@ class ExpenseController extends Controller
         ]);
     }
 
-    // ─── Helper Methods ─────────────────────────────────────────────
+    // -- Helper Methods ---------------------------------------------
 
     private function applyDateFilter($query, $range)
     {

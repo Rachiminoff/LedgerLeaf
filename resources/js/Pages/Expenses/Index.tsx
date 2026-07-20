@@ -1,6 +1,6 @@
-// resources/js/Pages/Expenses/Index.tsx
 import React, { useState, useEffect } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
+import { toastSuccess, toastError, toastWarning } from '@/Components/ui/Toast';
 import { Sidebar } from '@/Components/dashboard/Sidebar';
 import { TopNav } from '@/Components/dashboard/TopNav';
 import ExpenseHeader from '@/Components/expenses/ExpenseHeader';
@@ -19,6 +19,7 @@ import { useExpenseFilters } from '@/hooks/useExpenseFilters';
 import { usePockets } from '@/hooks/usePockets';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Skeleton } from '@/Components/ui/skeleton';
+import { Icon } from '@iconify/react';
 import axios from 'axios';
 
 interface PageProps {
@@ -42,6 +43,7 @@ export default function ExpensesIndex() {
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [activeFilterCount, setActiveFilterCount] = useState(0);
 
     // Confirmation Modal State
     const [confirmModal, setConfirmModal] = useState<{
@@ -61,6 +63,7 @@ export default function ExpensesIndex() {
     });
 
     const isMobile = useMediaQuery('(max-width: 768px)');
+    const isTablet = useMediaQuery('(max-width: 1024px)');
 
     const {
         expenses,
@@ -82,6 +85,12 @@ export default function ExpensesIndex() {
     useEffect(() => {
         fetchExpenses(filters);
         fetchPockets();
+    }, [filters]);
+
+    // Count active filters
+    useEffect(() => {
+        const count = Object.values(filters).filter(v => v !== '' && v !== null && v !== undefined && v !== 'all').length;
+        setActiveFilterCount(count);
     }, [filters]);
 
     // Auto-dismiss messages
@@ -125,16 +134,12 @@ export default function ExpensesIndex() {
             setSuccessMessage(null);
             setIsLoading(true);
             
-            console.log('Saving expense - Mode:', modalMode);
-            console.log('Data:', data);
-            
             if (modalMode === 'create') {
                 await createExpense(data);
-                setSuccessMessage('Expense added successfully!');
+                toastSuccess('Expense added successfully!');
             } else {
-                // ✅ Update existing expense - data includes id
                 await updateExpense(data.id, data);
-                setSuccessMessage('Expense updated successfully!');
+                toastSuccess('Expense updated successfully!');
             }
             
             setIsModalOpen(false);
@@ -143,7 +148,7 @@ export default function ExpensesIndex() {
                 fetchPockets()
             ]);
         } catch (err: any) {
-            setError(err.message || 'Failed to save expense');
+            toastError(err.message || 'Failed to save expense');
             console.error('Failed to save expense:', err);
         } finally {
             setIsLoading(false);
@@ -167,7 +172,7 @@ export default function ExpensesIndex() {
             });
 
             if (response.data) {
-                setSuccessMessage('Expense added successfully!');
+                toastSuccess('Expense added successfully!');
                 setIsModalOpen(false);
                 await Promise.all([
                     fetchExpenses(filters),
@@ -175,7 +180,7 @@ export default function ExpensesIndex() {
                 ]);
             }
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to add expense');
+            toastError(err.response?.data?.message || 'Failed to add expense');
             console.error('Failed to add expense:', err);
         } finally {
             setIsLoading(false);
@@ -192,15 +197,17 @@ export default function ExpensesIndex() {
             type: 'warning',
             confirmText: 'Archive',
             action: async () => {
+                // Close modal first
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
                 try {
                     await archiveExpense(id);
-                    setSuccessMessage('Expense archived successfully!');
+                    toastSuccess('Expense archived successfully!');
                     await Promise.all([
                         fetchExpenses(filters),
                         fetchPockets()
                     ]);
                 } catch (err: any) {
-                    setError(err.message || 'Failed to archive expense');
+                    toastError(err.message || 'Failed to archive expense');
                 }
             },
         });
@@ -212,19 +219,21 @@ export default function ExpensesIndex() {
         setConfirmModal({
             isOpen: true,
             title: 'Delete Expense',
-            message: `Are you sure you want to permanently delete "${expense?.description || 'this expense'}"?`,
+            message: `Are you sure you want to permanently delete "${expense?.description || 'this expense'}"? This action cannot be undone.`,
             type: 'danger',
             confirmText: 'Delete',
             action: async () => {
+                // Close modal first
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
                 try {
                     await deleteExpense(id);
-                    setSuccessMessage('Expense deleted successfully!');
+                    toastSuccess('Expense deleted successfully!');
                     await Promise.all([
                         fetchExpenses(filters),
                         fetchPockets()
                     ]);
                 } catch (err: any) {
-                    setError(err.message || 'Failed to delete expense');
+                    toastError(err.message || 'Failed to delete expense');
                 }
             },
         });
@@ -232,16 +241,29 @@ export default function ExpensesIndex() {
 
     const handlePageChange = (page: number) => {
         fetchExpenses({ ...filters, page });
+        // Scroll to top on mobile
+        if (isMobile) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     };
 
     const handleLogout = () => {
         router.post('/logout');
     };
 
+    const handleViewArchived = () => {
+        router.visit('/expenses/archived');
+    };
+
     if (loading && expenses.length === 0) {
         return (
             <div className="min-h-screen bg-[#000000] font-['Inter',system-ui,sans-serif]">
-                <Sidebar activePage="expenses" onLogout={handleLogout} />
+                <Sidebar 
+                    activePage="expenses" 
+                    onLogout={handleLogout}
+                    isMobileOpen={isMobileMenuOpen}
+                    onMobileClose={() => setIsMobileMenuOpen(false)}
+                />
                 <div className="lg:ml-[280px] min-h-screen">
                     <TopNav
                         title="Expenses"
@@ -250,24 +272,24 @@ export default function ExpensesIndex() {
                     />
                     <main className="p-4 sm:p-6 lg:p-8">
                         <div className="max-w-[1400px] mx-auto">
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mb-6">
                                 {[1, 2, 3, 4, 5].map((i) => (
-                                    <div key={i} className="bg-[#111111] border border-[#242424] rounded-xl p-4">
-                                        <Skeleton className="h-4 w-20 bg-[#242424]" />
-                                        <Skeleton className="h-6 w-24 bg-[#242424] mt-2" />
+                                    <div key={i} className="bg-[#111111] border border-[#242424] rounded-xl p-3 md:p-4">
+                                        <Skeleton className="h-3 md:h-4 w-16 md:w-20 bg-[#242424]" />
+                                        <Skeleton className="h-5 md:h-6 w-20 md:w-24 bg-[#242424] mt-2" />
                                     </div>
                                 ))}
                             </div>
-                            <div className="bg-[#111111] border border-[#242424] rounded-xl p-4">
+                            <div className="bg-[#111111] border border-[#242424] rounded-xl p-3 md:p-4">
                                 <div className="space-y-3">
                                     {[1, 2, 3, 4, 5].map((i) => (
-                                        <div key={i} className="flex items-center gap-4">
-                                            <Skeleton className="h-10 w-10 rounded-full bg-[#242424]" />
+                                        <div key={i} className="flex items-center gap-3 md:gap-4">
+                                            <Skeleton className="h-8 md:h-10 w-8 md:w-10 rounded-full bg-[#242424]" />
                                             <div className="flex-1">
-                                                <Skeleton className="h-4 w-32 bg-[#242424]" />
-                                                <Skeleton className="h-3 w-24 bg-[#242424] mt-1" />
+                                                <Skeleton className="h-3 md:h-4 w-24 md:w-32 bg-[#242424]" />
+                                                <Skeleton className="h-2 md:h-3 w-16 md:w-24 bg-[#242424] mt-1" />
                                             </div>
-                                            <Skeleton className="h-4 w-20 bg-[#242424]" />
+                                            <Skeleton className="h-3 md:h-4 w-16 md:w-20 bg-[#242424]" />
                                         </div>
                                     ))}
                                 </div>
@@ -284,7 +306,12 @@ export default function ExpensesIndex() {
             <Head title="Expenses | LedgerLeaf" />
 
             <div className="min-h-screen bg-[#000000] font-['Inter',system-ui,sans-serif]">
-                <Sidebar activePage="expenses" onLogout={handleLogout} />
+                <Sidebar 
+                    activePage="expenses" 
+                    onLogout={handleLogout}
+                    isMobileOpen={isMobileMenuOpen}
+                    onMobileClose={() => setIsMobileMenuOpen(false)}
+                />
 
                 <div className="lg:ml-[280px] min-h-screen">
                     <TopNav
@@ -293,49 +320,36 @@ export default function ExpensesIndex() {
                         notificationCount={0}
                     />
 
-                    <main className="p-4 sm:p-6 lg:p-8">
+                    <main className="p-3 sm:p-4 md:p-6 lg:p-8">
                         <div className="max-w-[1400px] mx-auto">
-                            {/* Success Message */}
-                            {successMessage && (
-                                <div className="mb-4 p-4 bg-[#5CB85C]/10 border border-[#5CB85C]/30 rounded-xl text-[#5CB85C] text-sm">
-                                    {successMessage}
-                                </div>
-                            )}
-
-                            {/* Error Message */}
-                            {error && (
-                                <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-500 text-sm">
-                                    {error}
-                                </div>
-                            )}
-
                             {/* Header */}
                             <ExpenseHeader />
 
-                            {/* Summary Cards */}
+                            {/* Summary Cards - Mobile optimized grid */}
                             <ExpenseSummaryCards summary={summary} loading={loading} />
 
                             {/* Quick Actions */}
-                            <QuickActions onCreateExpense={handleCreateExpense} />
+                            <QuickActions 
+                                onCreateExpense={handleCreateExpense}
+                                onViewArchived={handleViewArchived}
+                            />
 
-                            {/* Filters */}
+                            {/* Filters with mobile responsive layout */}
                             <ExpenseFilters
                                 filters={filters}
                                 onFilterChange={setFilters}
                                 onReset={resetFilters}
+                                activeFilterCount={activeFilterCount}
                             />
 
-                            {/* Main Content Grid */}
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-                                {/* Expense List - 2/3 on desktop */}
+                            {/* Main Content Grid - Mobile optimized */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mt-4 md:mt-6">
+                                {/* Expense List */}
                                 <div className="lg:col-span-2">
                                     {expenses.length === 0 && !loading ? (
-                                        <div className="bg-[#111111] border border-[#242424] rounded-xl p-12 text-center">
+                                        <div className="bg-[#111111] border border-[#242424] rounded-xl p-8 md:p-12 text-center">
                                             <div className="text-[#9A9A9A] text-6xl mb-4">
-                                                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v1m0 1v1m0 1v1m0 1v1m0 1v1" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 21c5.523 0 10-4.477 10-10S17.523 1 12 1 2 5.477 2 10s4.477 10 10 10z" />
-                                                </svg>
+                                                <Icon icon="mdi:cash" className="w-16 h-16 mx-auto" />
                                             </div>
                                             <h3 className="text-lg font-medium text-white">No expenses yet</h3>
                                             <p className="text-[#9A9A9A] mt-1 text-sm">
@@ -351,7 +365,7 @@ export default function ExpensesIndex() {
                                     ) : (
                                         <>
                                             {isMobile ? (
-                                                <div className="space-y-4">
+                                                <div className="space-y-3">
                                                     {expenses.map((expense: any) => (
                                                         <ExpenseCard
                                                             key={expense.id}
@@ -373,30 +387,31 @@ export default function ExpensesIndex() {
                                                 />
                                             )}
 
-                                            {/* Pagination */}
-                                            {pagination && (
-                                                <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-                                                    <p className="text-sm text-[#9A9A9A]">
+                                            {/* Pagination - Mobile optimized */}
+                                            {pagination && pagination.total > 0 && (
+                                                <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4">
+                                                    <p className="text-xs sm:text-sm text-[#9A9A9A]">
                                                         Showing {pagination.from} to {pagination.to} of {pagination.total} entries
                                                     </p>
-                                                    <div className="flex gap-2">
+                                                    <div className="flex flex-wrap justify-center gap-1 sm:gap-2">
                                                         <button
                                                             onClick={() => handlePageChange(pagination.current_page - 1)}
                                                             disabled={pagination.current_page === 1}
-                                                            className="px-3 py-1 rounded-lg bg-[#111111] border border-[#242424] text-[#9A9A9A] disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#5CB85C] transition-colors"
+                                                            className="px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-lg bg-[#111111] border border-[#242424] text-[#9A9A9A] disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#5CB85C] transition-colors min-h-[36px] min-w-[36px]"
                                                         >
-                                                            Previous
+                                                            <span className="hidden sm:inline">Previous</span>
+                                                            <span className="sm:hidden">‹</span>
                                                         </button>
                                                         {Array.from({ length: pagination.last_page }, (_, i) => i + 1)
                                                             .slice(
-                                                                Math.max(0, pagination.current_page - 3),
-                                                                Math.min(pagination.last_page, pagination.current_page + 2)
+                                                                Math.max(0, pagination.current_page - (isMobile ? 2 : 3)),
+                                                                Math.min(pagination.last_page, pagination.current_page + (isMobile ? 1 : 2))
                                                             )
                                                             .map((page) => (
                                                                 <button
                                                                     key={page}
                                                                     onClick={() => handlePageChange(page)}
-                                                                    className={`px-3 py-1 rounded-lg transition-colors ${
+                                                                    className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-lg transition-colors min-h-[36px] min-w-[36px] ${
                                                                         page === pagination.current_page
                                                                             ? 'bg-[#5CB85C] text-black'
                                                                             : 'bg-[#111111] border border-[#242424] text-[#9A9A9A] hover:border-[#5CB85C]'
@@ -409,9 +424,10 @@ export default function ExpensesIndex() {
                                                         <button
                                                             onClick={() => handlePageChange(pagination.current_page + 1)}
                                                             disabled={pagination.current_page === pagination.last_page}
-                                                            className="px-3 py-1 rounded-lg bg-[#111111] border border-[#242424] text-[#9A9A9A] disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#5CB85C] transition-colors"
+                                                            className="px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-lg bg-[#111111] border border-[#242424] text-[#9A9A9A] disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#5CB85C] transition-colors min-h-[36px] min-w-[36px]"
                                                         >
-                                                            Next
+                                                            <span className="hidden sm:inline">Next</span>
+                                                            <span className="sm:hidden">›</span>
                                                         </button>
                                                     </div>
                                                 </div>
@@ -420,17 +436,27 @@ export default function ExpensesIndex() {
                                     )}
                                 </div>
 
-                                {/* Stats & Insights - 1/3 on desktop */}
-                                <div className="lg:col-span-1 space-y-6">
+                                {/* Stats & Insights - Hidden on mobile, shown below on tablet */}
+                                {!isMobile && (
+                                    <div className="lg:col-span-1 space-y-4 md:space-y-6">
+                                        <ExpenseStats stats={stats} loading={loading} />
+                                        <InsightsPanel insights={insights} loading={loading} />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Mobile Stats & Insights - Shown below the list on mobile */}
+                            {isMobile && (
+                                <div className="mt-4 space-y-4">
                                     <ExpenseStats stats={stats} loading={loading} />
                                     <InsightsPanel insights={insights} loading={loading} />
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </main>
                 </div>
 
-                {/* Expense Detail Drawer - Only Edit button */}
+                {/* Expense Detail Drawer */}
                 <ExpenseDrawer
                     isOpen={isDrawerOpen}
                     onClose={() => setIsDrawerOpen(false)}

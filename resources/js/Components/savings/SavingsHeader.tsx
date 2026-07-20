@@ -1,9 +1,14 @@
 import React from 'react';
+import { Icon } from '@iconify/react';
 
-export default function SavingsHeader() {
+interface SavingsHeaderProps {
+    onCreateGoal?: () => void;
+}
+
+export default function SavingsHeader({ onCreateGoal }: SavingsHeaderProps) {
     return (
         <div className="relative mb-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                         Savings
@@ -11,6 +16,17 @@ export default function SavingsHeader() {
                     <p className="text-sm text-[#9A9A9A] mt-1">
                         Track your financial goals and grow your savings.
                     </p>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={onCreateGoal}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-[#5CB85C] text-black rounded-xl hover:bg-[#6FCF70] transition-all duration-200 font-medium text-sm shadow-lg shadow-[#5CB85C]/20 hover:shadow-[#5CB85C]/40"
+                    >
+                        <Icon icon="mdi:plus" className="w-5 h-5" />
+                        <span className="hidden sm:inline">Add Savings Goal</span>
+                        <span className="sm:hidden">Add Goal</span>
+                    </button>
                 </div>
             </div>
 

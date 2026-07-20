@@ -1,4 +1,3 @@
-// resources/js/Components/budget/PocketModal.tsx
 import { Fragment, useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { X, AlertCircle } from 'lucide-react';
@@ -11,7 +10,7 @@ interface PocketModalProps {
     onSave: (data: any) => void;
     mode: 'create' | 'edit';
     pocket: any;
-    safeBalance?: number; // Add safeBalance prop
+    safeBalance?: number;
 }
 
 export default function PocketModal({ 
@@ -41,7 +40,7 @@ export default function PocketModal({
                 description: pocket.description || '',
                 icon: pocket.icon || 'mdi:folder',
                 color: pocket.color || '#5CB85C',
-                allocated: pocket.allocated?.toString() || '',
+                allocated: '', // Empty in edit mode - amount is not editable
             });
         } else {
             setFormData({
@@ -57,10 +56,8 @@ export default function PocketModal({
     const handleAllocationChange = (value: string) => {
         setFormData({ ...formData, allocated: value });
         
-        // Clear error when user types
         if (error) setError(null);
         
-        // Validate if amount exceeds safe balance
         const amount = parseFloat(value);
         if (mode === 'create' && amount > 0 && amount > safeBalance) {
             setError(`Amount exceeds safe balance of ₱${safeBalance.toFixed(2)}`);
@@ -78,22 +75,20 @@ export default function PocketModal({
             return;
         }
         
-        // Validate: Cannot exceed safe balance when editing (if increasing)
-        if (mode === 'edit' && pocket) {
-            const currentAllocated = pocket.allocated || 0;
-            const increaseAmount = allocatedAmount - currentAllocated;
-            
-            // Only check if we're increasing the allocation
-            if (increaseAmount > 0 && increaseAmount > safeBalance) {
-                setError(`Cannot increase allocation by ₱${increaseAmount.toFixed(2)}. Safe balance is ₱${safeBalance.toFixed(2)}`);
-                return;
-            }
+        // Prepare data for save
+        const saveData: any = {
+            name: formData.name.trim(),
+            description: formData.description.trim(),
+            icon: formData.icon,
+            color: formData.color,
+        };
+
+        // Only include allocated for create mode
+        if (mode === 'create') {
+            saveData.allocated = allocatedAmount;
         }
-        
-        onSave({
-            ...formData,
-            allocated: allocatedAmount,
-        });
+
+        onSave(saveData);
     };
 
     const formatCurrency = (amount: number) => {
@@ -232,15 +227,17 @@ export default function PocketModal({
                             </div>
 
                             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-4 modal-scrollbar">
-                                {/* Safe Balance Display */}
-                                <div className="p-3 rounded-lg bg-[#171717] border border-[#242424]">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-[#9A9A9A]">Safe Balance</span>
-                                        <span className="text-sm font-semibold text-[#5CB85C]">
-                                            {formatCurrency(safeBalance)}
-                                        </span>
+                                {/* Safe Balance Display - Only show in create mode */}
+                                {mode === 'create' && (
+                                    <div className="p-3 rounded-lg bg-[#171717] border border-[#242424]">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-[#9A9A9A]">Safe Balance</span>
+                                            <span className="text-sm font-semibold text-[#5CB85C]">
+                                                {formatCurrency(safeBalance)}
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
                                 {/* Error Message */}
                                 {error && (
@@ -273,7 +270,7 @@ export default function PocketModal({
 
                                 <div>
                                     <label className="block text-sm text-[#9A9A9A] mb-1">Icon</label>
-                                    <div className="grid grid-cols-7 gap-2">
+                                    <div className="grid grid-cols-7 gap-2 max-h-32 overflow-y-auto">
                                         {iconOptions.map((icon) => (
                                             <button
                                                 key={icon.value}
@@ -312,35 +309,47 @@ export default function PocketModal({
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm text-[#9A9A9A] mb-1">
-                                        {mode === 'create' ? 'Initial Allocation' : 'Monthly Allocation'}
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        placeholder="0.00"
-                                        value={formData.allocated}
-                                        onChange={(e) => handleAllocationChange(e.target.value)}
-                                        className={`w-full px-3 py-2 bg-[#171717] border rounded-lg text-white focus:border-[#5CB85C] focus:outline-none ${
-                                            isOverSafeBalance 
-                                                ? 'border-red-500 focus:ring-red-500' 
-                                                : 'border-[#242424]'
-                                        }`}
-                                    />
-                                    {mode === 'create' && safeBalance > 0 && (
-                                        <div className="mt-1 text-xs text-[#9A9A9A]">
-                                            Available: {formatCurrency(safeBalance)}
+                                {/* Amount Input - Only show in create mode */}
+                                {mode === 'create' && (
+                                    <div>
+                                        <label className="block text-sm text-[#9A9A9A] mb-1">
+                                            Initial Allocation
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            placeholder="0.00"
+                                            value={formData.allocated}
+                                            onChange={(e) => handleAllocationChange(e.target.value)}
+                                            className={`w-full px-3 py-2 bg-[#171717] border rounded-lg text-white focus:border-[#5CB85C] focus:outline-none ${
+                                                isOverSafeBalance 
+                                                    ? 'border-red-500 focus:ring-red-500' 
+                                                    : 'border-[#242424]'
+                                            }`}
+                                        />
+                                        {safeBalance > 0 && (
+                                            <div className="mt-1 text-xs text-[#9A9A9A]">
+                                                Available: {formatCurrency(safeBalance)}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Show current allocation in edit mode (read-only) */}
+                                {mode === 'edit' && pocket && (
+                                    <div className="p-3 rounded-lg bg-[#171717] border border-[#242424]">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-[#9A9A9A]">Current Allocation</span>
+                                            <span className="text-sm font-semibold text-white">
+                                                {formatCurrency(pocket.allocated || 0)}
+                                            </span>
                                         </div>
-                                    )}
-                                    {mode === 'edit' && pocket && (
-                                        <div className="mt-1 text-xs text-[#9A9A9A]">
-                                            Current: {formatCurrency(pocket.allocated || 0)}
-                                            {safeBalance > 0 && ` | Available: ${formatCurrency(safeBalance)}`}
-                                        </div>
-                                    )}
-                                </div>
+                                        <p className="text-xs text-[#6B7280] mt-1">
+                                            Allocation amount cannot be changed in edit mode. Use the Allocate Funds action to adjust.
+                                        </p>
+                                    </div>
+                                )}
 
                                 <div className="flex gap-3 pt-4 border-t border-[#242424]">
                                     <button

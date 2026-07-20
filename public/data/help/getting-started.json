@@ -1,0 +1,44 @@
+[
+  {
+    "step": 1,
+    "title": "Add Funds",
+    "icon": "mdi:wallet-plus",
+    "description": "Begin by adding money to your account. Every deposit increases your Total Balance, which represents the total amount of money you currently own.",
+    "details": "Your Total Balance is the foundation of your finances in LedgerLeaf. As you allocate money to pockets or savings, your Total Balance remains the same until you record actual expenses."
+  },
+  {
+    "step": 2,
+    "title": "Understand Your Safe Balance",
+    "icon": "mdi:shield-check",
+    "description": "Your Safe Balance is the amount of money that has not yet been allocated. Think of it as your available budget waiting to be assigned.",
+    "details": "Only your Safe Balance can be allocated to budgeting pockets or transferred into savings goals. Keeping an eye on your Safe Balance helps prevent over-allocation and ensures you always know how much disposable money you have available."
+  },
+  {
+    "step": 3,
+    "title": "Create Budget Pockets",
+    "icon": "mdi:folder-plus",
+    "description": "Organize your money by creating pockets for different spending categories such as Food, Transportation, Bills, Shopping, or Entertainment.",
+    "details": "Allocating money into pockets helps you assign every peso a purpose before you spend it. Each pocket maintains its own balance, making it easier to stay within budget and avoid overspending."
+  },
+  {
+    "step": 4,
+    "title": "Record Expenses",
+    "icon": "mdi:credit-card-outline",
+    "description": "Whenever you make a purchase, record it under the appropriate pocket to keep your finances accurate and up to date.",
+    "details": "Expenses reduce both the selected pocket's balance and your Total Balance. This gives you a clear picture of where your money is going while keeping your financial records synchronized."
+  },
+  {
+    "step": 5,
+    "title": "Build Your Savings",
+    "icon": "mdi:piggy-bank-outline",
+    "description": "Create savings goals and move money from your Safe Balance toward future purchases or emergency funds.",
+    "details": "Savings are funded exclusively from your Safe Balance, ensuring that money already allocated to your budget isn't counted twice. Track your progress toward each goal as you gradually build your savings."
+  },
+  {
+    "step": 6,
+    "title": "Review Your Financial Progress",
+    "icon": "mdi:chart-line",
+    "description": "Use the Dashboard and Analytics pages to monitor your spending habits, budget utilization, savings progress, and overall financial health.",
+    "details": "LedgerLeaf automatically updates your balances, charts, and insights whenever you record expenses, adjust budgets, or contribute to savings. Reviewing these summaries regularly helps you make informed financial decisions and stay on track with your goals."
+  }
+]

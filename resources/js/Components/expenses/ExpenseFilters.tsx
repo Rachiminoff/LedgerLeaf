@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Filter, Search, X, ChevronDown, RefreshCw } from 'lucide-react';
+import { usePockets } from '@/hooks/usePockets';
 
 interface ExpenseFiltersProps {
     filters: any;
@@ -9,6 +10,11 @@ interface ExpenseFiltersProps {
 
 export default function ExpenseFilters({ filters, onFilterChange, onReset }: ExpenseFiltersProps) {
     const [isExpanded, setIsExpanded] = useState(false);
+    const { pockets, fetchPockets, loading: pocketsLoading } = usePockets();
+
+    useEffect(() => {
+        fetchPockets();
+    }, []);
 
     const dateRanges = [
         { value: 'today', label: 'Today' },
@@ -25,25 +31,13 @@ export default function ExpenseFilters({ filters, onFilterChange, onReset }: Exp
         { value: 'lowest', label: 'Lowest Amount' },
     ];
 
-    // Mock data - replace with actual data from backend
-    const pockets = [
-        { id: 1, name: 'Food', icon: '🍔' },
-        { id: 2, name: 'Transport', icon: '🚗' },
-        { id: 3, name: 'Entertainment', icon: '🎮' },
-    ];
-
-    const categories = [
-        { id: 1, name: 'Groceries', icon: '🛒' },
-        { id: 2, name: 'Restaurants', icon: '🍽️' },
-        { id: 3, name: 'Gas', icon: '⛽' },
-    ];
-
     const paymentMethods = [
         'Cash',
         'Credit Card',
         'Debit Card',
         'Bank Transfer',
-        'Mobile Payment',
+        'GCash',
+        'PayMaya',
         'Other',
     ];
 
@@ -138,30 +132,12 @@ export default function ExpenseFilters({ filters, onFilterChange, onReset }: Exp
                             value={filters.pocket_id || ''}
                             onChange={(e) => onFilterChange({ pocket_id: e.target.value ? Number(e.target.value) : undefined })}
                             className="w-full px-3 py-2 bg-[#171717] border border-[#242424] rounded-lg text-white focus:outline-none focus:border-[#5CB85C] transition-colors text-sm"
+                            disabled={pocketsLoading}
                         >
                             <option value="">All Pockets</option>
-                            {pockets.map((pocket) => (
+                            {pockets.map((pocket: any) => (
                                 <option key={pocket.id} value={pocket.id}>
-                                    {pocket.icon} {pocket.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Category Filter */}
-                    <div>
-                        <label className="block text-xs text-[#9A9A9A] font-medium uppercase tracking-wider mb-1.5">
-                            Category
-                        </label>
-                        <select
-                            value={filters.category_id || ''}
-                            onChange={(e) => onFilterChange({ category_id: e.target.value ? Number(e.target.value) : undefined })}
-                            className="w-full px-3 py-2 bg-[#171717] border border-[#242424] rounded-lg text-white focus:outline-none focus:border-[#5CB85C] transition-colors text-sm"
-                        >
-                            <option value="">All Categories</option>
-                            {categories.map((category) => (
-                                <option key={category.id} value={category.id}>
-                                    {category.icon} {category.name}
+                                    {pocket.name}
                                 </option>
                             ))}
                         </select>
@@ -188,7 +164,7 @@ export default function ExpenseFilters({ filters, onFilterChange, onReset }: Exp
 
                     {/* Custom Date Range */}
                     {filters.date_range === 'custom' && (
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-2 col-span-1 sm:col-span-2">
                             <div>
                                 <label className="block text-xs text-[#9A9A9A] font-medium uppercase tracking-wider mb-1.5">
                                     From
@@ -215,7 +191,7 @@ export default function ExpenseFilters({ filters, onFilterChange, onReset }: Exp
                     )}
 
                     {/* Amount Range */}
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-2 col-span-1 sm:col-span-2 lg:col-span-1">
                         <div>
                             <label className="block text-xs text-[#9A9A9A] font-medium uppercase tracking-wider mb-1.5">
                                 Min Amount
@@ -245,20 +221,12 @@ export default function ExpenseFilters({ filters, onFilterChange, onReset }: Exp
             )}
 
             {/* Active Filters Tags */}
-            {(filters.pocket_id || filters.category_id || filters.payment_method || filters.search) && (
+            {(filters.pocket_id || filters.payment_method || filters.search) && (
                 <div className="flex flex-wrap gap-1.5 px-4 pb-4">
                     {filters.pocket_id && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#171717] rounded-full text-xs text-[#9A9A9A]">
-                            Pocket: {pockets.find(p => p.id === filters.pocket_id)?.name}
+                            Pocket: {pockets.find((p: any) => p.id === filters.pocket_id)?.name || 'Unknown'}
                             <button onClick={() => onFilterChange({ pocket_id: undefined })}>
-                                <X className="w-3 h-3 hover:text-white" />
-                            </button>
-                        </span>
-                    )}
-                    {filters.category_id && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#171717] rounded-full text-xs text-[#9A9A9A]">
-                            Category: {categories.find(c => c.id === filters.category_id)?.name}
-                            <button onClick={() => onFilterChange({ category_id: undefined })}>
                                 <X className="w-3 h-3 hover:text-white" />
                             </button>
                         </span>

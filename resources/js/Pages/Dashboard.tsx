@@ -1,4 +1,3 @@
-// resources/js/Pages/Dashboard.tsx
 import React, { useState, useEffect } from 'react'
 import { router, usePage } from '@inertiajs/react'
 import { Sidebar } from '@/Components/Dashboard/Sidebar'
@@ -209,7 +208,12 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#000000] font-['Inter',system-ui,sans-serif]">
-      <Sidebar activePage="dashboard" onLogout={handleLogout} />
+      <Sidebar 
+        activePage="dashboard" 
+        onLogout={handleLogout}
+        isMobileOpen={isMobileMenuOpen}
+        onMobileClose={() => setIsMobileMenuOpen(false)}
+      />
 
       <div className="lg:ml-[280px] min-h-screen">
         <TopNav

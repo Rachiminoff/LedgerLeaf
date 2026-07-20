@@ -94,13 +94,6 @@ export default function SavingsGoalCard({
                         <Icon icon="mdi:pencil" className="w-4 h-4 text-[#9A9A9A]" />
                     </button>
                     <button
-                        onClick={(e) => { e.stopPropagation(); onArchive(); }}
-                        className="p-1.5 rounded-lg hover:bg-[#242424] transition-colors"
-                        title="Archive"
-                    >
-                        <Icon icon="mdi:archive" className="w-4 h-4 text-[#9A9A9A]" />
-                    </button>
-                    <button
                         onClick={(e) => { e.stopPropagation(); onDelete(); }}
                         className="p-1.5 rounded-lg hover:bg-[#242424] transition-colors"
                         title="Delete"

@@ -58,14 +58,29 @@ export default function GoalModal({
 
         const targetAmount = parseFloat(formData.target_amount)
 
+        // Validate goal name
         if (!formData.name.trim()) {
             setError('Please enter a goal name')
             return
         }
 
+        // Validate target amount
         if (!targetAmount || targetAmount <= 0) {
             setError('Please enter a valid target amount')
             return
+        }
+
+        // Validate target date
+        if (formData.target_date) {
+            const selectedDate = new Date(formData.target_date)
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+            selectedDate.setHours(0, 0, 0, 0)
+
+            if (selectedDate <= today) {
+                setError('Target date must be in the future. Please select a date after today.')
+                return
+            }
         }
 
         onSave({
@@ -83,6 +98,13 @@ export default function GoalModal({
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
         }).format(amount)
+    }
+
+    // Get tomorrow's date for min attribute
+    const getTomorrowDate = () => {
+        const tomorrow = new Date()
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        return tomorrow.toISOString().split('T')[0]
     }
 
     return (
@@ -118,6 +140,7 @@ export default function GoalModal({
                                 <button
                                     onClick={onClose}
                                     className="p-1 rounded-lg hover:bg-[#242424] transition-colors"
+                                    disabled={loading}
                                 >
                                     <X className="w-5 h-5 text-[#9A9A9A]" />
                                 </button>
@@ -125,55 +148,92 @@ export default function GoalModal({
 
                             <form onSubmit={handleSubmit} className="p-4 space-y-4">
                                 {error && (
-                                    <div className="flex items-center gap-2 p-3 rounded-lg bg-[#FF5A5A]/10 border border-[#FF5A5A]/30">
-                                        <AlertCircle className="w-4 h-4 text-[#FF5A5A] flex-shrink-0" />
+                                    <div className="flex items-start gap-2 p-3 rounded-lg bg-[#FF5A5A]/10 border border-[#FF5A5A]/30">
+                                        <AlertCircle className="w-4 h-4 text-[#FF5A5A] flex-shrink-0 mt-0.5" />
                                         <p className="text-sm text-[#FF5A5A]">{error}</p>
                                     </div>
                                 )}
 
                                 <div>
-                                    <label className="block text-sm text-[#9A9A9A] mb-1">Goal Name *</label>
+                                    <label className="block text-sm text-[#9A9A9A] mb-1">
+                                        Goal Name <span className="text-[#FF5A5A]">*</span>
+                                    </label>
                                     <input
                                         type="text"
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full px-3 py-2 bg-[#171717] border border-[#242424] rounded-lg text-white focus:outline-none focus:border-[#5CB85C] transition-colors"
+                                        className={`w-full px-3 py-2 bg-[#171717] border rounded-lg text-white focus:outline-none focus:border-[#5CB85C] transition-colors ${
+                                            error && !formData.name.trim() ? 'border-[#FF5A5A]' : 'border-[#242424]'
+                                        }`}
                                         placeholder="e.g., New Laptop"
                                         disabled={loading}
                                         required
+                                        maxLength={255}
                                     />
+                                    <p className="text-xs text-[#9A9A9A] mt-1">
+                                        {formData.name.length}/255 characters
+                                    </p>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm text-[#9A9A9A] mb-1">Target Amount *</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0.01"
-                                        value={formData.target_amount}
-                                        onChange={(e) => setFormData({ ...formData, target_amount: e.target.value })}
-                                        className="w-full px-3 py-2 bg-[#171717] border border-[#242424] rounded-lg text-white focus:outline-none focus:border-[#5CB85C] transition-colors"
-                                        placeholder="50000.00"
-                                        disabled={loading}
-                                        required
-                                    />
-                                    {formData.target_amount && (
-                                        <p className="text-xs text-[#9A9A9A] mt-1">
-                                            {formatCurrency(parseFloat(formData.target_amount))}
+                                    <label className="block text-sm text-[#9A9A9A] mb-1">
+                                        Target Amount <span className="text-[#FF5A5A]">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9A9A9A]">₱</span>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0.01"
+                                            value={formData.target_amount}
+                                            onChange={(e) => setFormData({ ...formData, target_amount: e.target.value })}
+                                            className={`w-full pl-8 pr-3 py-2 bg-[#171717] border rounded-lg text-white focus:outline-none focus:border-[#5CB85C] transition-colors ${
+                                                error && (!formData.target_amount || parseFloat(formData.target_amount) <= 0) 
+                                                    ? 'border-[#FF5A5A]' 
+                                                    : 'border-[#242424]'
+                                            }`}
+                                            placeholder="50000.00"
+                                            disabled={loading}
+                                            required
+                                        />
+                                    </div>
+                                    {formData.target_amount && parseFloat(formData.target_amount) > 0 && (
+                                        <p className="text-xs text-[#5CB85C] mt-1">
+                                            Target: {formatCurrency(parseFloat(formData.target_amount))}
+                                        </p>
+                                    )}
+                                    {formData.target_amount && parseFloat(formData.target_amount) <= 0 && (
+                                        <p className="text-xs text-[#FF5A5A] mt-1">
+                                            Please enter a positive amount
                                         </p>
                                     )}
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm text-[#9A9A9A] mb-1">Target Date</label>
+                                    <label className="block text-sm text-[#9A9A9A] mb-1">
+                                        Target Date <span className="text-[#FF5A5A]">*</span>
+                                    </label>
                                     <input
                                         type="date"
                                         value={formData.target_date}
                                         onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
-                                        className="w-full px-3 py-2 bg-[#171717] border border-[#242424] rounded-lg text-white focus:outline-none focus:border-[#5CB85C] transition-colors"
+                                        className={`w-full px-3 py-2 bg-[#171717] border rounded-lg text-white focus:outline-none focus:border-[#5CB85C] transition-colors ${
+                                            error && formData.target_date && new Date(formData.target_date) <= new Date()
+                                                ? 'border-[#FF5A5A]'
+                                                : 'border-[#242424]'
+                                        }`}
                                         disabled={loading}
-                                        min={new Date().toISOString().split('T')[0]}
+                                        min={getTomorrowDate()}
+                                        required
                                     />
+                                    <p className="text-xs text-[#9A9A9A] mt-1">
+                                        Must be at least one day after today
+                                    </p>
+                                    {formData.target_date && new Date(formData.target_date) <= new Date() && (
+                                        <p className="text-xs text-[#FF5A5A] mt-1">
+                                            Please select a date after today
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -185,7 +245,11 @@ export default function GoalModal({
                                         rows={3}
                                         placeholder="Optional description of your savings goal"
                                         disabled={loading}
+                                        maxLength={1000}
                                     />
+                                    <p className="text-xs text-[#9A9A9A] mt-1">
+                                        {formData.description.length}/1000 characters
+                                    </p>
                                 </div>
 
                                 <div className="flex gap-3 pt-4 border-t border-[#242424]">

@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import axios from 'axios';
 
+// Set up axios defaults
+axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+axios.defaults.headers.common['Accept'] = 'application/json';
+axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+
 const API_URL = '/api';
 
 export function useBudget() {
@@ -16,8 +21,8 @@ export function useBudget() {
             const response = await axios.get(`${API_URL}/budget/data`);
             setSummary(response.data.summary);
             setStats(response.data.stats);
-            setInsights(response.data.insights);
-            setRecentActivity(response.data.recent_activity);
+            setInsights(response.data.insights || []);
+            setRecentActivity(response.data.recent_activity || []);
         } catch (error: any) {
             console.error('Failed to fetch budget data:', error);
             throw error;
@@ -31,7 +36,6 @@ export function useBudget() {
             const response = await axios.post(`${API_URL}/pockets`, data);
             return response.data;
         } catch (error: any) {
-            // Extract validation errors
             if (error.response?.status === 422) {
                 const errorData = error.response.data;
                 if (errorData.errors) {

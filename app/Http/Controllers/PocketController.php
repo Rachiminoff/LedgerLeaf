@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 class PocketController extends Controller
 {
     /**
-     * List all pockets for the authenticated user
+     * List all pockets for the authenticated user (Web)
      */
     public function index(Request $request)
     {
@@ -58,6 +58,50 @@ class PocketController extends Controller
             return response()->json([
                 'error' => $e->getMessage(),
                 'line' => $e->getLine()
+            ], 500);
+        }
+    }
+
+    /**
+     * API endpoint for pockets
+     * Returns JSON for use in filters and other components
+     */
+    public function apiIndex(Request $request)
+    {
+        try {
+            $user = $request->user();
+            
+            if (!$user) {
+                return response()->json([], 401);
+            }
+
+            $pockets = Pocket::where('user_id', $user->id)
+                ->where('is_archived', false)
+                ->orderBy('name')
+                ->get();
+
+            // Format pockets for the frontend
+            $formattedPockets = $pockets->map(function ($pocket) {
+                return [
+                    'id' => $pocket->id,
+                    'name' => $pocket->name,
+                    'icon' => $pocket->icon ?? 'mdi:folder',
+                    'color' => $pocket->color ?? '#5CB85C',
+                    'balance' => $pocket->balance,
+                    'allocated' => $pocket->allocated,
+                    'spent' => $pocket->spent,
+                    'description' => $pocket->description,
+                    'is_default' => $pocket->is_default,
+                ];
+            });
+
+            return response()->json($formattedPockets);
+            
+        } catch (\Exception $e) {
+            \Log::error('Pocket API error: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to fetch pockets',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -246,7 +290,7 @@ class PocketController extends Controller
             $pocket->restore();
             $newValues = $pocket->fresh()->toArray();
 
-            // ✅ Create audit log for restore action
+            // Create audit log for restore action
             $this->createAuditLog(
                 $user->id,
                 'restore_pocket',

@@ -13,6 +13,7 @@ export interface Expense {
     receipt_url?: string;
     tags?: string[];
     notes?: string;
+    type?: 'expense' | 'income' | 'transfer';
     is_archived: boolean;
     created_at: string;
     updated_at: string;
@@ -20,6 +21,8 @@ export interface Expense {
     // Relationships
     category?: Category;
     pocket?: Pocket;
+    category_name?: string;
+    pocket_name?: string;
 }
 
 export interface Category {
@@ -65,7 +68,9 @@ export interface ExpenseFilters {
     max_amount?: number;
     search?: string;
     sort_by: 'newest' | 'oldest' | 'highest' | 'lowest';
-    is_archived: boolean;
+    is_archived?: boolean;
+    page?: number;
+    per_page?: number;
 }
 
 export interface ExpenseInsight {
@@ -97,4 +102,112 @@ export interface ExpenseStats {
         percentage: number;
         color: string;
     }>;
+}
+
+// ─── Archived Expenses Types ─────────────────────────────────────
+
+export interface ArchivedExpense extends Expense {
+    archived_at: string;
+    archived_by?: number;
+    restored_at?: string | null;
+    restored_by?: number | null;
+    deletion_reason?: string;
+}
+
+export interface ArchivedExpenseFilters {
+    search?: string;
+    date_from?: string;
+    date_to?: string;
+    category_id?: number;
+    pocket_id?: number;
+    min_amount?: number;
+    max_amount?: number;
+    sort_by: 'newest' | 'oldest' | 'highest' | 'lowest';
+    page?: number;
+    per_page?: number;
+}
+
+export interface ArchivedExpenseStats {
+    total_archived: number;
+    total_amount: number;
+    average_amount: number;
+    oldest_archive_date: string;
+    newest_archive_date: string;
+    archived_by_category: Array<{
+        category_name: string;
+        count: number;
+        total_amount: number;
+    }>;
+    archived_by_month: Array<{
+        month: string;
+        count: number;
+        total_amount: number;
+    }>;
+}
+
+// ─── Expense API Response Types ─────────────────────────────────
+
+export interface ExpenseApiResponse {
+    data: Expense[];
+    meta: {
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+        from: number;
+        to: number;
+    };
+    links: {
+        first: string;
+        last: string;
+        prev: string | null;
+        next: string | null;
+    };
+}
+
+export interface ArchivedExpenseApiResponse {
+    data: ArchivedExpense[];
+    meta: {
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+        from: number;
+        to: number;
+    };
+    links: {
+        first: string;
+        last: string;
+        prev: string | null;
+        next: string | null;
+    };
+    stats: ArchivedExpenseStats;
+}
+
+// ─── Form Types ──────────────────────────────────────────────────
+
+export interface ExpenseFormData {
+    amount: number;
+    description: string;
+    category_id: number;
+    pocket_id: number;
+    expense_date: string;
+    merchant?: string;
+    payment_method?: string;
+    notes?: string;
+    tags?: string[];
+    receipt?: File | null;
+}
+
+export interface ExpenseValidationErrors {
+    amount?: string[];
+    description?: string[];
+    category_id?: string[];
+    pocket_id?: string[];
+    expense_date?: string[];
+    merchant?: string[];
+    payment_method?: string[];
+    notes?: string[];
+    tags?: string[];
+    receipt?: string[];
 }
