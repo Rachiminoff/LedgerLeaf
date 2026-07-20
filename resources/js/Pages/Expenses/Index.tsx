@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
 import { toastSuccess, toastError, toastWarning } from '@/Components/ui/Toast';
-import { Sidebar } from '@/Components/dashboard/Sidebar';
-import { TopNav } from '@/Components/dashboard/TopNav';
+import { Sidebar } from '@/Components/Dashboard/Sidebar';
+import { TopNav } from '@/Components/Dashboard/TopNav';
 import ExpenseHeader from '@/Components/expenses/ExpenseHeader';
 import ExpenseSummaryCards from '@/Components/expenses/ExpenseSummaryCards';
 import QuickActions from '@/Components/expenses/QuickActions';
