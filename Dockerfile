@@ -47,7 +47,24 @@ RUN npm install
 # Build frontend assets
 RUN npm run build
 
-# Railway provides the PORT environment variable
+# Create Laravel directories
+RUN mkdir -p \
+    storage/framework/cache \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    bootstrap/cache
+
+# Set permissions
+RUN chmod -R 775 storage bootstrap/cache
+
+# Clear any stale caches (won't fail if APP_KEY isn't set yet)
+RUN php artisan config:clear || true
+RUN php artisan cache:clear || true
+RUN php artisan route:clear || true
+RUN php artisan view:clear || true
+
+# Expose port
 EXPOSE 8000
 
 # Start Laravel
