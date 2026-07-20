@@ -17,6 +17,7 @@ interface PageProps {
             email: string;
         };
     };
+    [key: string]: unknown;
 }
 
 interface ConfirmModalConfig {
@@ -70,7 +71,7 @@ export default function ArchivedExpenses() {
     };
 
     const handleRestore = (id: number) => {
-        const expense = expenses.find((e: any) => e.id === id);
+        const expense = expenses.find((e: { id?: number; description?: string }) => e.id === id);
         setConfirmModal({
             isOpen: true,
             title: 'Restore Expense',
@@ -91,7 +92,7 @@ export default function ArchivedExpenses() {
     };
 
     const handleDelete = (id: number) => {
-        const expense = expenses.find((e: any) => e.id === id);
+        const expense = expenses.find((e: { id?: number; description?: string }) => e.id === id);
         setConfirmModal({
             isOpen: true,
             title: 'Delete Expense',

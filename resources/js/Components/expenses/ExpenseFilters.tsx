@@ -19,6 +19,7 @@ interface ExpenseFiltersProps {
   filters: ExpenseFiltersType;
   onFilterChange: (filters: Partial<ExpenseFiltersType>) => void;
   onReset: () => void;
+  activeFilterCount?: number;
 }
 
 // Define pocket type
@@ -96,7 +97,7 @@ export default function ExpenseFilters({ filters, onFilterChange, onReset }: Exp
   // Get pocket name by ID
   const getPocketName = useCallback((id?: number): string => {
     if (!id) return 'Unknown';
-    const pocket = pockets.find((p: Pocket) => p.id === id);
+    const pocket = (pockets as Pocket[]).find((p: Pocket) => p.id === id);
     return pocket?.name || 'Unknown';
   }, [pockets]);
 

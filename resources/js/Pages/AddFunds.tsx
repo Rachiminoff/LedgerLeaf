@@ -15,8 +15,10 @@ interface PageProps {
       id: number
       name: string
       email: string
+      email_verified_at?: string
     }
   }
+  [key: string]: unknown
   balances: {
     safe_balance: number
     pocket_balance: number
@@ -116,7 +118,7 @@ const AddFunds: React.FC = () => {
         setShowSuccessModal(true)
         // Reload the page to get fresh data
         setTimeout(() => {
-          router.reload({ preserveState: false })
+          router.reload({ only: [] as string[] })
         }, 300)
       },
       onError: (errors) => {
@@ -160,7 +162,7 @@ const AddFunds: React.FC = () => {
         <TopNav
           title="Add Funds"
           onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          showBackButton
+          showBackButton={true}
           onBack={handleBack}
         />
 

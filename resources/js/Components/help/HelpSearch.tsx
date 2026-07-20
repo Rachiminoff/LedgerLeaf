@@ -4,11 +4,16 @@ import { Icon } from '@iconify/react';
 interface HelpSearchProps {
   onSearch: (query: string) => void;
   loading: boolean;
+  value?: string;
 }
 
-export default function HelpSearch({ onSearch, loading }: HelpSearchProps) {
-  const [query, setQuery] = useState('');
+export default function HelpSearch({ onSearch, loading, value }: HelpSearchProps) {
+  const [query, setQuery] = useState(value ?? '');
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setQuery(value ?? '');
+  }, [value]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

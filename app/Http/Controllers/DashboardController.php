@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Transaction;
 use App\Models\Pocket;
 use App\Models\Budget;
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -48,9 +49,15 @@ class DashboardController extends Controller
                 ]);
         }
 
-        // Get allocated to pockets
-        $allocatedToPockets = Pocket::where('user_id', $user->id)->sum('allocated') ?? 0;
-        $spentFromPockets = Pocket::where('user_id', $user->id)->sum('spent') ?? 0;
+        // Get pockets data
+        $pockets = Pocket::where('user_id', $user->id)
+            ->whereNull('deleted_at')
+            ->where('is_archived', false)
+            ->get();
+
+        // Calculate pocket totals
+        $allocatedToPockets = $pockets->sum('allocated') ?? 0;
+        $spentFromPockets = $pockets->sum('spent') ?? 0;
         $remainingInPockets = $allocatedToPockets - $spentFromPockets;
 
         // Monthly spending
@@ -90,20 +97,58 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Budget categories
-        $budgetCategories = \DB::table('budget_categories')
-            ->join('categories', 'budget_categories.category_id', '=', 'categories.id')
-            ->join('budgets', 'budget_categories.budget_id', '=', 'budgets.id')
-            ->where('budgets.user_id', $user->id)
-            ->where('budgets.is_active', true)
-            ->select(
-                'budget_categories.*',
-                'categories.name',
-                'categories.icon',
-                'categories.color',
-                'budgets.name as budget_name'
-            )
-            ->get();
+        // Get budget categories from the budget_categories table
+        // First, check if the budget_categories table exists
+        $budgetCategories = [];
+        
+        try {
+            // Check if table exists
+            if (\Schema::hasTable('budget_categories')) {
+                $budgetCategories = \DB::table('budget_categories')
+                    ->join('categories', 'budget_categories.category_id', '=', 'categories.id')
+                    ->join('budgets', 'budget_categories.budget_id', '=', 'budgets.id')
+                    ->where('budgets.user_id', $user->id)
+                    ->where('budgets.is_active', true)
+                    ->select(
+                        'budget_categories.id',
+                        'categories.name',
+                        'categories.icon',
+                        'categories.color',
+                        'budget_categories.allocated',
+                        'budget_categories.spent',
+                        'budget_categories.remaining',
+                        'budget_categories.budget_id',
+                        'budget_categories.category_id',
+                        'budgets.name as budget_name'
+                    )
+                    ->get()
+                    ->map(function ($item) {
+                        return (array) $item;
+                    })
+                    ->toArray();
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Budget categories table not found or error: ' . $e->getMessage());
+            $budgetCategories = [];
+        }
+
+        // If no budget categories found, use pockets as fallback
+        if (empty($budgetCategories)) {
+            $budgetCategories = $pockets->map(function ($pocket) {
+                return [
+                    'id' => $pocket->id,
+                    'name' => $pocket->name,
+                    'icon' => $pocket->icon ?? 'mdi:folder',
+                    'color' => $pocket->color ?? '#5CB85C',
+                    'allocated' => $pocket->allocated,
+                    'spent' => $pocket->spent,
+                    'remaining' => $pocket->allocated - $pocket->spent,
+                    'budget_id' => 0,
+                    'category_id' => $pocket->id,
+                    'budget_name' => $pocket->name,
+                ];
+            })->toArray();
+        }
 
         // Notifications
         $notifications = \DB::table('notifications')
@@ -136,7 +181,7 @@ class DashboardController extends Controller
         ];
 
         // Build budget summary (matches what BudgetController returns)
-        $totalPockets = Pocket::where('user_id', $user->id)->whereNull('deleted_at')->count();
+        $totalPockets = $pockets->count();
         $budgetHealth = $allocatedToPockets > 0 ? ($remainingInPockets / $allocatedToPockets) * 100 : 100;
 
         $summary = [
@@ -156,6 +201,9 @@ class DashboardController extends Controller
             'total_balance' => $totalBalance,
             'allocated_to_pockets' => $allocatedToPockets,
             'spent_from_pockets' => $spentFromPockets,
+            'total_pockets' => $totalPockets,
+            'pockets_count' => $pockets->count(),
+            'budget_categories_count' => count($budgetCategories),
             'stats' => $stats,
             'summary' => $summary,
         ]);
@@ -230,6 +278,43 @@ class DashboardController extends Controller
                 'id' => count($insights) + 1,
                 'message' => "Your total balance is ₱" . number_format($totalBalance, 2) . ". Keep up the good work!",
                 'icon' => 'mdi:chart-line',
+                'type' => 'positive',
+            ];
+        }
+
+        // Pocket insights
+        $pockets = Pocket::where('user_id', $user->id)
+            ->whereNull('deleted_at')
+            ->where('is_archived', false)
+            ->get();
+
+        foreach ($pockets as $pocket) {
+            if ($pocket->allocated > 0) {
+                $usage = ($pocket->spent / $pocket->allocated) * 100;
+                if ($usage > 90) {
+                    $insights[] = [
+                        'id' => count($insights) + 1,
+                        'message' => "Your \"{$pocket->name}\" pocket is at " . round($usage) . "% usage - consider refilling!",
+                        'icon' => 'mdi:alert-circle',
+                        'type' => 'warning',
+                    ];
+                } elseif ($usage < 10 && $pocket->allocated > 0) {
+                    $insights[] = [
+                        'id' => count($insights) + 1,
+                        'message' => "Your \"{$pocket->name}\" pocket has only been used " . round($usage) . "% - you might have over-allocated!",
+                        'icon' => 'mdi:lightbulb',
+                        'type' => 'neutral',
+                    ];
+                }
+            }
+        }
+
+        // If no insights, add a default positive one
+        if (empty($insights)) {
+            $insights[] = [
+                'id' => 1,
+                'message' => "Your finances are looking great! Keep up the good work!",
+                'icon' => 'mdi:star',
                 'type' => 'positive',
             ];
         }

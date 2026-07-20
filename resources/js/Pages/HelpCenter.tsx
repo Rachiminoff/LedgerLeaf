@@ -2,14 +2,14 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Head, router } from '@inertiajs/react';
 import { Sidebar } from '@/Components/dashboard/Sidebar';
 import { TopNav } from '@/Components/dashboard/TopNav';
-import HelpHeader from '@/Components/Help/HelpHeader';
-import HelpSearch from '@/Components/Help/HelpSearch';
-import AboutSection from '@/Components/Help/AboutSection';
-import GettingStarted from '@/Components/Help/GettingStarted';
-import FAQSection from '@/Components/Help/FAQSection';
-import FinancialConcepts from '@/Components/Help/FinancialConcepts';
-import AppInfo from '@/Components/Help/AppInfo';
-import NavigationMenu from '@/Components/Help/NavigationMenu';
+import HelpHeader from '@/Components/help/HelpHeader';
+import HelpSearch from '@/Components/help/HelpSearch';
+import AboutSection from '@/Components/help/AboutSection';
+import GettingStarted from '@/Components/help/GettingStarted';
+import FAQSection from '@/Components/help/FAQSection';
+import FinancialConcepts from '@/Components/help/FinancialConcepts';
+import AppInfo from '@/Components/help/AppInfo';
+import NavigationMenu from '@/Components/help/NavigationMenu';
 import { 
   AboutData, 
   GettingStartedStep, 
@@ -229,7 +229,8 @@ export default function HelpCenter({ auth }: PageProps) {
       {/* App Info Section */}
       {appInfo && (searchQuery === '' || 
         appInfo.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        appInfo.technologies.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
+        [...appInfo.technologies.frontend, ...appInfo.technologies.backend, ...appInfo.technologies.database]
+          .some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
       ) && (
         <section id="app-info" className="scroll-mt-20 md:scroll-mt-24">
           <AppInfo data={appInfo} />

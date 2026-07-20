@@ -14,10 +14,11 @@ interface PageProps {
             email: string;
         };
     };
+    [key: string]: unknown;
 }
 
 export default function TransactionsIndex() {
-    const { auth } = usePage<PageProps>().props;
+    const { auth } = usePage<PageProps & { [key: string]: unknown }>().props;
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -153,24 +154,24 @@ export default function TransactionsIndex() {
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                                 <div className="bg-[#111111] border border-[#242424] rounded-xl p-4">
                                     <p className="text-xs text-[#9A9A9A]">Total Transactions</p>
-                                    <p className="text-xl font-bold text-white">{summary?.total || 0}</p>
+                                    <p className="text-xl font-bold text-white">{typeof summary?.total === 'number' ? summary.total : 0}</p>
                                 </div>
                                 <div className="bg-[#111111] border border-[#242424] rounded-xl p-4">
                                     <p className="text-xs text-[#9A9A9A]">Most Common Action</p>
                                     <p className="text-xl font-bold text-white truncate">
-                                        {summary?.by_action?.[0]?.action 
-                                            ? getActionLabel(summary.by_action[0].action) 
+                                        {summary?.by_action && summary.by_action[0]?.action
+                                            ? getActionLabel(summary.by_action[0].action)
                                             : '—'}
                                     </p>
                                 </div>
                                 <div className="bg-[#111111] border border-[#242424] rounded-xl p-4">
                                     <p className="text-xs text-[#9A9A9A]">Unique Actions</p>
-                                    <p className="text-xl font-bold text-white">{summary?.by_action?.length || 0}</p>
+                                    <p className="text-xl font-bold text-white">{summary?.by_action ? summary.by_action.length : 0}</p>
                                 </div>
                                 <div className="bg-[#111111] border border-[#242424] rounded-xl p-4">
                                     <p className="text-xs text-[#9A9A9A]">Latest Activity</p>
                                     <p className="text-xl font-bold text-white">
-                                        {transactions.length > 0 ? formatDate(transactions[0].created_at) : '—'}
+                                        {transactions.length > 0 && typeof transactions[0]?.created_at === 'string' ? formatDate(transactions[0].created_at) : '—'}
                                     </p>
                                 </div>
                             </div>
@@ -306,25 +307,25 @@ export default function TransactionsIndex() {
                             </div>
 
                             {/* Pagination */}
-                            {pagination && pagination.last_page > 1 && (
+                            {pagination && typeof pagination.last_page === 'number' && pagination.last_page > 1 && (
                                 <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
                                     <p className="text-sm text-[#9A9A9A]">
-                                        Showing {pagination.from} to {pagination.to} of {pagination.total} entries
+                                        Showing {pagination.from ?? 0} to {pagination.to ?? 0} of {pagination.total ?? 0} entries
                                     </p>
                                     <div className="flex gap-2">
                                         <button
-                                            onClick={() => handlePageChange(pagination.current_page - 1)}
-                                            disabled={pagination.current_page === 1}
+                                            onClick={() => handlePageChange((pagination.current_page ?? 1) - 1)}
+                                            disabled={(pagination.current_page ?? 1) === 1}
                                             className="px-3 py-1 rounded-lg bg-[#111111] border border-[#242424] text-[#9A9A9A] disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#5CB85C] transition-colors"
                                         >
                                             Previous
                                         </button>
-                                        {Array.from({ length: Math.min(pagination.last_page, 5) }, (_, i) => i + 1).map((page) => (
+                                        {Array.from({ length: Math.min(pagination.last_page ?? 1, 5) }, (_, i) => i + 1).map((page) => (
                                             <button
                                                 key={page}
                                                 onClick={() => handlePageChange(page)}
                                                 className={`px-3 py-1 rounded-lg transition-colors ${
-                                                    page === pagination.current_page
+                                                    page === (pagination.current_page ?? 1)
                                                         ? 'bg-[#5CB85C] text-black'
                                                         : 'bg-[#111111] border border-[#242424] text-[#9A9A9A] hover:border-[#5CB85C]'
                                                 }`}
@@ -333,8 +334,8 @@ export default function TransactionsIndex() {
                                             </button>
                                         ))}
                                         <button
-                                            onClick={() => handlePageChange(pagination.current_page + 1)}
-                                            disabled={pagination.current_page === pagination.last_page}
+                                            onClick={() => handlePageChange((pagination.current_page ?? 1) + 1)}
+                                            disabled={(pagination.current_page ?? 1) === (pagination.last_page ?? 1)}
                                             className="px-3 py-1 rounded-lg bg-[#111111] border border-[#242424] text-[#9A9A9A] disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#5CB85C] transition-colors"
                                         >
                                             Next

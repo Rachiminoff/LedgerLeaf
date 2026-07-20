@@ -33,6 +33,7 @@ interface PageProps {
         completed_goals: number
     }
     recent_transactions: any[]
+    [key: string]: unknown
 }
 
 interface ConfirmModalConfig {

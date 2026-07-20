@@ -144,32 +144,30 @@ export const toastInfo = (message: string, duration?: number) =>
 export const toastPromise = (
     promise: Promise<any>,
     messages: {
-        loading: string;
-        success: string;
-        error: string;
+        loading: React.ReactNode;
+        success: React.ReactNode;
+        error: React.ReactNode;
     }
 ) => {
     return toast.promise(
         promise,
         {
-            loading: () => (
+            loading: (
                 <div className="flex items-center gap-3 bg-[#1A1A1A] border border-[#242424] rounded-xl px-4 py-3">
                     <div className="w-5 h-5 border-2 border-[#5CB85C] border-t-transparent rounded-full animate-spin" />
                     <span className="text-sm font-medium text-white">{messages.loading}</span>
                 </div>
             ),
-            success: () => (
+            success: (
                 <div className="flex items-center gap-3 bg-[#1A1A1A] border border-[#242424] rounded-xl px-4 py-3">
                     <Icon icon="mdi:check-circle" className="w-5 h-5 text-[#5CB85C]" />
                     <span className="text-sm font-medium text-white">{messages.success}</span>
                 </div>
             ),
-            error: (error: any) => (
+            error: (
                 <div className="flex items-center gap-3 bg-[#1A1A1A] border border-[#242424] rounded-xl px-4 py-3">
                     <Icon icon="mdi:close-circle" className="w-5 h-5 text-[#FF6B6B]" />
-                    <span className="text-sm font-medium text-white">
-                        {messages.error || error?.message || 'Something went wrong'}
-                    </span>
+                    <span className="text-sm font-medium text-white">{messages.error}</span>
                 </div>
             ),
         },

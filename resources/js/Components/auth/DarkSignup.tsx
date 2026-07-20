@@ -139,11 +139,11 @@ export const DarkSignup: React.FC<DarkSignupProps> = ({
           errors.password_confirmation = error.password_confirmation
         } else if (typeof error === 'object' && error !== null) {
           // Handle Laravel validation errors object
-          const firstError = Object.values(error)[0]
+          const firstError = Object.values(error as Record<string, unknown>)[0]
           if (typeof firstError === 'string') {
             setGeneralError(firstError)
           } else if (Array.isArray(firstError) && firstError.length > 0) {
-            setGeneralError(firstError[0])
+            setGeneralError(firstError[0] as string)
           } else {
             setGeneralError('Something went wrong. Please try again.')
           }

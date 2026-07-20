@@ -8,12 +8,39 @@ axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
 const API_URL = '/api';
 
+interface BudgetSummary {
+    safe_balance?: number;
+    allocated_balance?: number;
+    remaining_balance?: number;
+    monthly_budget?: number;
+    total_pockets?: number;
+    budget_health?: number;
+    budget_health_label?: string;
+    [key: string]: unknown;
+}
+
+interface BudgetStats {
+    [key: string]: unknown;
+}
+
+interface BudgetInsight {
+    id?: number;
+    message?: string;
+    icon?: string;
+    type?: 'positive' | 'warning' | 'neutral';
+    [key: string]: unknown;
+}
+
+interface RecentActivityItem {
+    [key: string]: unknown;
+}
+
 export function useBudget() {
     const [loading, setLoading] = useState(false);
-    const [summary, setSummary] = useState(null);
-    const [stats, setStats] = useState(null);
-    const [insights, setInsights] = useState([]);
-    const [recentActivity, setRecentActivity] = useState([]);
+    const [summary, setSummary] = useState<BudgetSummary | null>(null);
+    const [stats, setStats] = useState<BudgetStats | null>(null);
+    const [insights, setInsights] = useState<BudgetInsight[]>([]);
+    const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
 
     const fetchBudgetData = async () => {
         setLoading(true);

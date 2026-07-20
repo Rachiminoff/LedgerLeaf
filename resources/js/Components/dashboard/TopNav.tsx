@@ -13,6 +13,8 @@ interface TopNavProps {
   }
   onSearch?: (query: string) => void
   onNotificationsClick?: () => void
+  showBackButton?: boolean
+  onBack?: () => void
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -22,6 +24,8 @@ export const TopNav: React.FC<TopNavProps> = ({
   user,
   onSearch,
   onNotificationsClick,
+  showBackButton = false,
+  onBack,
 }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
@@ -46,13 +50,23 @@ export const TopNav: React.FC<TopNavProps> = ({
       <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
         {/* Left - Title & Menu */}
         <div className="flex items-center gap-4">
-          <button
-            onClick={onMenuToggle}
-            className="lg:hidden text-[#9A9A9A] hover:text-white transition-colors duration-200 p-2 -ml-2 min-h-[44px] min-w-[44px]"
-            aria-label="Toggle menu"
-          >
-            <Icon icon="mdi:menu" className="h-6 w-6" />
-          </button>
+          {showBackButton && onBack ? (
+            <button
+              onClick={onBack}
+              className="text-[#9A9A9A] hover:text-white transition-colors duration-200 p-2 -ml-2 min-h-[44px] min-w-[44px]"
+              aria-label="Go back"
+            >
+              <Icon icon="mdi:arrow-left" className="h-6 w-6" />
+            </button>
+          ) : (
+            <button
+              onClick={onMenuToggle}
+              className="lg:hidden text-[#9A9A9A] hover:text-white transition-colors duration-200 p-2 -ml-2 min-h-[44px] min-w-[44px]"
+              aria-label="Toggle menu"
+            >
+              <Icon icon="mdi:menu" className="h-6 w-6" />
+            </button>
+          )}
           <h1 className="text-xl sm:text-2xl font-light text-white tracking-tight">
             {title}
           </h1>

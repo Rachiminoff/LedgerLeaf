@@ -24,8 +24,10 @@ interface PageProps {
             id: number
             name: string
             email: string
+            email_verified_at?: string
         }
     }
+    [key: string]: unknown
 }
 
 export default function AnalyticsIndex() {
@@ -91,7 +93,13 @@ export default function AnalyticsIndex() {
     }
 
     // Check if there's any data to display
-    const hasOverviewData = overview && (overview.income > 0 || overview.expenses > 0 || overview.savings > 0)
+    const hasOverviewData = Boolean(
+        overview && (
+            Number(overview.income ?? 0) > 0 ||
+            Number(overview.expenses ?? 0) > 0 ||
+            Number(overview.savings ?? 0) > 0
+        )
+    )
 
     return (
         <>

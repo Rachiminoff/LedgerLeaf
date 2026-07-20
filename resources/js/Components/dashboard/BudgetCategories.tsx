@@ -10,52 +10,85 @@ interface Pocket {
   allocated: number
   spent: number
   remaining: number
-  progress: number
-  is_archived: boolean
+  progress?: number
+  is_archived?: boolean
+  description?: string
 }
 
 interface BudgetCategoriesProps {
-  pockets?: Pocket[]
+  categories?: Pocket[]
   onManage?: () => void
   onViewPocket?: (id: number) => void
+  limit?: number
 }
 
 export const BudgetCategories: React.FC<BudgetCategoriesProps> = ({
-  pockets: propPockets,
+  categories: propCategories,
   onManage,
   onViewPocket,
+  limit = 6,
 }) => {
   const [localPockets, setLocalPockets] = useState<Pocket[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   
-  // Use the hook if pockets not provided as props
-  const { pockets: hookPockets, fetchPockets } = usePockets()
+  // Use the hook to fetch pockets from database
+  const { pockets: hookPockets, fetchPockets, loading: hookLoading } = usePockets()
 
   /**
    * Initialize pockets from props or fetch from API
    */
   useEffect(() => {
-    if (propPockets) {
-      setLocalPockets(propPockets)
+    if (propCategories && propCategories.length > 0) {
+      setLocalPockets(propCategories)
       setLoading(false)
+      setError(null)
     } else {
       fetchPockets()
     }
-  }, [propPockets])
+  }, [propCategories])
 
   /**
    * Update local pockets when hook data changes
    */
   useEffect(() => {
-    if (!propPockets && hookPockets) {
-      setLocalPockets(hookPockets)
+    if (!propCategories && hookPockets) {
+      const normalizedPockets: Pocket[] = hookPockets.map((pocket: any) => {
+        const allocated = Number(pocket.allocated || 0)
+        const spent = Number(pocket.spent || 0)
+        const remaining = allocated - spent
+        const progress = allocated > 0 ? (spent / allocated) * 100 : 0
+        
+        return {
+          id: pocket.id,
+          name: pocket.name,
+          icon: pocket.icon || 'mdi:folder',
+          color: pocket.color || '#5CB85C',
+          allocated: allocated,
+          spent: spent,
+          remaining: remaining,
+          progress: progress,
+          is_archived: pocket.is_archived || false,
+          description: pocket.description || '',
+        }
+      })
+      setLocalPockets(normalizedPockets)
       setLoading(false)
+      setError(null)
     }
-  }, [hookPockets, propPockets])
+  }, [hookPockets, propCategories])
+
+  /**
+   * Update loading state from hook
+   */
+  useEffect(() => {
+    if (!propCategories) {
+      setLoading(hookLoading)
+    }
+  }, [hookLoading, propCategories])
 
   /**
    * Format amount as Philippine Peso currency
-   * Removes decimal places for cleaner display
    */
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-PH', {
@@ -66,8 +99,32 @@ export const BudgetCategories: React.FC<BudgetCategoriesProps> = ({
     }).format(amount)
   }
 
+  /**
+   * Refresh pockets from database
+   */
+  const refreshPockets = async () => {
+    setError(null)
+    try {
+      await fetchPockets()
+    } catch (err) {
+      setError('Failed to load pockets')
+      console.error('Error fetching pockets:', err)
+    }
+  }
+
   // Filter only active pockets (not archived)
   const activePockets = localPockets.filter(p => !p.is_archived)
+  
+  // Sort pockets by progress (most urgent first)
+  const sortedPockets = [...activePockets].sort((a, b) => {
+    const aProgress = a.progress || 0
+    const bProgress = b.progress || 0
+    // Sort by progress descending (most spent first)
+    return bProgress - aProgress
+  })
+
+  // Limit the number of pockets shown
+  const displayedPockets = sortedPockets.slice(0, limit)
 
   /**
    * Loading skeleton placeholder
@@ -110,17 +167,53 @@ export const BudgetCategories: React.FC<BudgetCategoriesProps> = ({
     )
   }
 
+  /**
+   * Error state
+   */
+  if (error) {
+    return (
+      <div className="bg-[#111111] rounded-2xl border border-[#242424] p-5 sm:p-6">
+        <div className="text-center py-8">
+          <div className="text-4xl mb-3 text-[#FF5A5A]">
+            <Icon icon="mdi:alert-circle" className="w-12 h-12 mx-auto" />
+          </div>
+          <p className="text-sm text-[#FF5A5A]">{error}</p>
+          <button
+            onClick={refreshPockets}
+            className="mt-3 text-sm text-[#5CB85C] hover:text-[#6FCF70] transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-[#111111] rounded-2xl border border-[#242424] p-5 sm:p-6">
       {/* Section Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-medium text-white">Budget Pockets</h3>
-        <button
-          onClick={onManage}
-          className="text-sm text-[#9A9A9A] hover:text-white transition-colors duration-200"
-        >
-          Manage
-        </button>
+        <div className="flex items-center gap-2">
+          <h3 className="text-base font-medium text-white">Budget Pockets</h3>
+          <span className="text-xs text-[#9A9A9A] bg-[#1A1A1A] px-2 py-0.5 rounded-full">
+            {activePockets.length}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={refreshPockets}
+            className="text-sm text-[#9A9A9A] hover:text-white transition-colors duration-200"
+            title="Refresh pockets"
+          >
+            <Icon icon="mdi:refresh" className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onManage}
+            className="text-sm text-[#9A9A9A] hover:text-white transition-colors duration-200"
+          >
+            Manage
+          </button>
+        </div>
       </div>
 
       {/* Empty State */}
@@ -131,13 +224,16 @@ export const BudgetCategories: React.FC<BudgetCategoriesProps> = ({
           </div>
           <p className="text-sm text-[#9A9A9A]">No pockets yet</p>
           <p className="text-xs text-[#6B7280] mt-1">Create a pocket to start budgeting</p>
-          <button className="text-sm text-[#5CB85C] hover:text-[#6FCF70] transition-colors mt-3">
+          <button 
+            onClick={onManage}
+            className="text-sm text-[#5CB85C] hover:text-[#6FCF70] transition-colors mt-3"
+          >
             Create your first pocket
           </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {activePockets.slice(0, 6).map((pocket) => {
+          {displayedPockets.map((pocket) => {
             const percentage = Math.min(Math.round(pocket.progress || 0), 100)
             const isOverBudget = percentage > 100
             const isNearLimit = percentage > 80 && percentage <= 100
@@ -145,7 +241,6 @@ export const BudgetCategories: React.FC<BudgetCategoriesProps> = ({
 
             /**
              * Determines the status color based on budget health
-             * Red: Over budget, Orange: Near limit, Green/Pocket color: On track
              */
             const getStatusColor = () => {
               if (isOverBudget) return '#FF5A5A'
@@ -169,7 +264,11 @@ export const BudgetCategories: React.FC<BudgetCategoriesProps> = ({
                       className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{ backgroundColor: `${pocket.color}20` }}
                     >
-                      <Icon icon={pocket.icon || 'mdi:folder'} className="h-4 w-4" style={{ color: pocket.color }} />
+                      <Icon 
+                        icon={pocket.icon || 'mdi:folder'} 
+                        className="h-4 w-4" 
+                        style={{ color: pocket.color }} 
+                      />
                     </div>
                     <div className="min-w-0">
                       <span className="text-sm font-medium text-white truncate block">
@@ -236,7 +335,7 @@ export const BudgetCategories: React.FC<BudgetCategoriesProps> = ({
       )}
 
       {/* View All Link */}
-      {activePockets.length > 6 && (
+      {activePockets.length > limit && (
         <div className="mt-4 text-center">
           <button 
             onClick={onManage}
@@ -249,3 +348,5 @@ export const BudgetCategories: React.FC<BudgetCategoriesProps> = ({
     </div>
   )
 }
+
+export default BudgetCategories

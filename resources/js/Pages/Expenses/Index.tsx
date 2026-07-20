@@ -30,16 +30,17 @@ interface PageProps {
             email: string;
         };
     };
+    [key: string]: unknown;
 }
 
 export default function ExpensesIndex() {
     const { auth } = usePage<PageProps>().props;
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [selectedExpense, setSelectedExpense] = useState<any>(null);
+    const [selectedExpense, setSelectedExpense] = useState<Record<string, any> | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-    const [editingExpense, setEditingExpense] = useState<any>(null);
+    const [editingExpense, setEditingExpense] = useState<Record<string, any> | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -80,6 +81,13 @@ export default function ExpensesIndex() {
     } = useExpenses();
 
     const { filters, setFilters, resetFilters } = useExpenseFilters();
+    const typedFilters = filters as {
+        date_range?: 'today' | 'this_week' | 'this_month' | 'last_3_months' | 'custom';
+        search?: string;
+        sort_by?: 'newest' | 'oldest' | 'highest' | 'lowest';
+        page?: number;
+        per_page?: number;
+    };
     const { pockets, fetchPockets } = usePockets();
 
     useEffect(() => {
@@ -89,7 +97,7 @@ export default function ExpensesIndex() {
 
     // Count active filters
     useEffect(() => {
-        const count = Object.values(filters).filter(v => v !== '' && v !== null && v !== undefined && v !== 'all').length;
+        const count = Object.values(filters).filter((v: unknown) => v !== '' && v !== null && v !== undefined && v !== 'all').length;
         setActiveFilterCount(count);
     }, [filters]);
 
@@ -336,7 +344,7 @@ export default function ExpensesIndex() {
 
                             {/* Filters with mobile responsive layout */}
                             <ExpenseFilters
-                                filters={filters}
+                                filters={typedFilters}
                                 onFilterChange={setFilters}
                                 onReset={resetFilters}
                                 activeFilterCount={activeFilterCount}
@@ -388,31 +396,31 @@ export default function ExpensesIndex() {
                                             )}
 
                                             {/* Pagination - Mobile optimized */}
-                                            {pagination && pagination.total > 0 && (
+                                            {pagination && (pagination as { total?: number }).total !== undefined && (pagination as { total?: number }).total! > 0 && (
                                                 <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4">
                                                     <p className="text-xs sm:text-sm text-[#9A9A9A]">
-                                                        Showing {pagination.from} to {pagination.to} of {pagination.total} entries
+                                                        Showing {(pagination as { from?: number }).from ?? 0} to {(pagination as { to?: number }).to ?? 0} of {(pagination as { total?: number }).total ?? 0} entries
                                                     </p>
                                                     <div className="flex flex-wrap justify-center gap-1 sm:gap-2">
                                                         <button
-                                                            onClick={() => handlePageChange(pagination.current_page - 1)}
-                                                            disabled={pagination.current_page === 1}
+                                                            onClick={() => handlePageChange(((pagination as { current_page?: number }).current_page ?? 1) - 1)}
+                                                            disabled={((pagination as { current_page?: number }).current_page ?? 1) === 1}
                                                             className="px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-lg bg-[#111111] border border-[#242424] text-[#9A9A9A] disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#5CB85C] transition-colors min-h-[36px] min-w-[36px]"
                                                         >
                                                             <span className="hidden sm:inline">Previous</span>
                                                             <span className="sm:hidden">‹</span>
                                                         </button>
-                                                        {Array.from({ length: pagination.last_page }, (_, i) => i + 1)
+                                                        {Array.from({ length: (pagination as { last_page?: number }).last_page ?? 1 }, (_, i) => i + 1)
                                                             .slice(
-                                                                Math.max(0, pagination.current_page - (isMobile ? 2 : 3)),
-                                                                Math.min(pagination.last_page, pagination.current_page + (isMobile ? 1 : 2))
+                                                                Math.max(0, ((pagination as { current_page?: number }).current_page ?? 1) - (isMobile ? 2 : 3)),
+                                                                Math.min((pagination as { last_page?: number }).last_page ?? 1, ((pagination as { current_page?: number }).current_page ?? 1) + (isMobile ? 1 : 2))
                                                             )
                                                             .map((page) => (
                                                                 <button
                                                                     key={page}
                                                                     onClick={() => handlePageChange(page)}
                                                                     className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-lg transition-colors min-h-[36px] min-w-[36px] ${
-                                                                        page === pagination.current_page
+                                                                        page === ((pagination as { current_page?: number }).current_page ?? 1)
                                                                             ? 'bg-[#5CB85C] text-black'
                                                                             : 'bg-[#111111] border border-[#242424] text-[#9A9A9A] hover:border-[#5CB85C]'
                                                                     }`}
@@ -422,8 +430,8 @@ export default function ExpensesIndex() {
                                                             ))
                                                         }
                                                         <button
-                                                            onClick={() => handlePageChange(pagination.current_page + 1)}
-                                                            disabled={pagination.current_page === pagination.last_page}
+                                                            onClick={() => handlePageChange(((pagination as { current_page?: number }).current_page ?? 1) + 1)}
+                                                            disabled={((pagination as { current_page?: number }).current_page ?? 1) === ((pagination as { last_page?: number }).last_page ?? 1)}
                                                             className="px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-lg bg-[#111111] border border-[#242424] text-[#9A9A9A] disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#5CB85C] transition-colors min-h-[36px] min-w-[36px]"
                                                         >
                                                             <span className="hidden sm:inline">Next</span>

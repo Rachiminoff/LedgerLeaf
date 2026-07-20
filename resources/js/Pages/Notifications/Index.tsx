@@ -3,10 +3,10 @@ import { Head, usePage, router } from '@inertiajs/react';
 import { toastSuccess, toastError, toastWarning } from '@/Components/ui/Toast';
 import { Sidebar } from '@/Components/dashboard/Sidebar';
 import { TopNav } from '@/Components/dashboard/TopNav';
-import NotificationFeed from '@/Components/Notifications/NotificationFeed';
-import NotificationSummary from '@/Components/Notifications/NotificationSummary';
-import NotificationFilters from '@/Components/Notifications/NotificationFilters';
-import EmptyState from '@/Components/Notifications/EmptyState';
+import NotificationFeed from '@/Components/notifications/NotificationFeed';
+import NotificationSummary from '@/Components/notifications/NotificationSummary';
+import NotificationFilters from '@/Components/notifications/NotificationFilters';
+import EmptyState from '@/Components/notifications/EmptyState';
 import { useNotifications } from '@/hooks/useNotifications';
 import { SkeletonCard } from '@/Components/ui/skeleton';
 
@@ -19,7 +19,7 @@ interface Props {
 export default function NotificationsIndex({ notifications, unread_count, summary }: Props) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [filter, setFilter] = useState('all');
-    const [notifData, setNotifData] = useState(notifications);
+    const [notifData, setNotifData] = useState<Record<string, Array<{ id: number; is_read?: boolean }>>>(notifications);
     const [unreadCount, setUnreadCount] = useState(unread_count);
 
     const {
@@ -41,7 +41,7 @@ export default function NotificationsIndex({ notifications, unread_count, summar
         setFilter(newFilter);
         const data = await fetchNotifications(newFilter);
         if (data) {
-            setNotifData(data);
+            setNotifData(data as Record<string, Array<{ id: number; is_read?: boolean }>>);
         }
     };
 
@@ -51,8 +51,8 @@ export default function NotificationsIndex({ notifications, unread_count, summar
             setUnreadCount(prev => Math.max(0, prev - 1));
             setNotifData(prev => {
                 const updated = { ...prev };
-                Object.keys(updated).forEach(group => {
-                    updated[group] = updated[group].map((n: any) =>
+                Object.keys(updated).forEach((group) => {
+                    updated[group] = updated[group].map((n: { id: number; is_read?: boolean }) =>
                         n.id === id ? { ...n, is_read: true } : n
                     );
                 });
@@ -70,8 +70,8 @@ export default function NotificationsIndex({ notifications, unread_count, summar
             setUnreadCount(prev => prev + 1);
             setNotifData(prev => {
                 const updated = { ...prev };
-                Object.keys(updated).forEach(group => {
-                    updated[group] = updated[group].map((n: any) =>
+                Object.keys(updated).forEach((group) => {
+                    updated[group] = updated[group].map((n: { id: number; is_read?: boolean }) =>
                         n.id === id ? { ...n, is_read: false } : n
                     );
                 });
@@ -88,11 +88,11 @@ export default function NotificationsIndex({ notifications, unread_count, summar
         if (success) {
             setNotifData(prev => {
                 const updated = { ...prev };
-                Object.keys(updated).forEach(group => {
-                    updated[group] = updated[group].filter((n: any) => n.id !== id);
+                Object.keys(updated).forEach((group) => {
+                    updated[group] = updated[group].filter((n: { id: number }) => n.id !== id);
                 });
                 // Remove empty groups
-                Object.keys(updated).forEach(group => {
+                Object.keys(updated).forEach((group) => {
                     if (updated[group].length === 0) {
                         delete updated[group];
                     }
@@ -111,8 +111,8 @@ export default function NotificationsIndex({ notifications, unread_count, summar
             setUnreadCount(0);
             setNotifData(prev => {
                 const updated = { ...prev };
-                Object.keys(updated).forEach(group => {
-                    updated[group] = updated[group].map((n: any) => ({ ...n, is_read: true }));
+                Object.keys(updated).forEach((group) => {
+                    updated[group] = updated[group].map((n: { id: number; is_read?: boolean }) => ({ ...n, is_read: true }));
                 });
                 return updated;
             });

@@ -4,6 +4,91 @@ import axios from 'axios'
 
 const API_URL = '/api'
 
+interface AnalyticsOverview {
+    income: number;
+    expenses: number;
+    savings: number;
+    remaining: number;
+    expense_change: number;
+    expense_change_direction: 'up' | 'down';
+}
+
+interface AnalyticsPoint {
+    date: string;
+    label: string;
+    month: string;
+    expenses: number;
+    income: number;
+    balance: number;
+    savings: number;
+}
+
+interface PocketBreakdownItem {
+    id: number;
+    name: string;
+    icon: string;
+    color: string;
+    amount: number;
+    percentage: number;
+}
+
+interface PocketBreakdownData {
+    data: PocketBreakdownItem[];
+    total: number;
+}
+
+interface AnalyticsPerformance {
+    total_saved: number;
+    total_target: number;
+    completed_goals: number;
+    active_goals: number;
+    savings_rate: number;
+    progress_percentage: number;
+}
+
+interface AnalyticsInsight {
+    id: string;
+    type: 'warning' | 'positive' | 'neutral';
+    title: string;
+    description: string;
+}
+
+interface AnalyticsQuickStats {
+    total_transactions: number;
+    average_expense: number;
+    largest_expense: number;
+    smallest_expense: number;
+    active_pockets: number;
+    completed_goals: number;
+}
+
+const defaultOverview: AnalyticsOverview = {
+    income: 0,
+    expenses: 0,
+    savings: 0,
+    remaining: 0,
+    expense_change: 0,
+    expense_change_direction: 'down',
+}
+
+const defaultPerformance: AnalyticsPerformance = {
+    total_saved: 0,
+    total_target: 0,
+    completed_goals: 0,
+    active_goals: 0,
+    savings_rate: 0,
+    progress_percentage: 0,
+}
+
+const defaultQuickStats: AnalyticsQuickStats = {
+    total_transactions: 0,
+    average_expense: 0,
+    largest_expense: 0,
+    smallest_expense: 0,
+    active_pockets: 0,
+    completed_goals: 0,
+}
+
 export function useAnalytics() {
     // ─── State ──────────────────────────────────────────────────────
 
@@ -14,25 +99,25 @@ export function useAnalytics() {
     const [exporting, setExporting] = useState(false)
 
     /** Financial overview data (income, expenses, savings, remaining) */
-    const [overview, setOverview] = useState(null)
+    const [overview, setOverview] = useState<AnalyticsOverview>(defaultOverview)
 
     /** Daily spending trend data for the selected period */
-    const [spendingTrend, setSpendingTrend] = useState([])
+    const [spendingTrend, setSpendingTrend] = useState<AnalyticsPoint[]>([])
 
     /** Monthly comparison data (income vs expenses vs savings) */
-    const [monthlyComparison, setMonthlyComparison] = useState([])
+    const [monthlyComparison, setMonthlyComparison] = useState<AnalyticsPoint[]>([])
 
     /** Pocket breakdown data for spending distribution */
-    const [pocketBreakdown, setPocketBreakdown] = useState({ data: [], total: 0 })
+    const [pocketBreakdown, setPocketBreakdown] = useState<PocketBreakdownData>({ data: [], total: 0 })
 
     /** Savings performance data (goals, progress, rate) */
-    const [savingsPerformance, setSavingsPerformance] = useState(null)
+    const [savingsPerformance, setSavingsPerformance] = useState<AnalyticsPerformance>(defaultPerformance)
 
     /** Generated financial insights based on user data */
-    const [insights, setInsights] = useState([])
+    const [insights, setInsights] = useState<AnalyticsInsight[]>([])
 
     /** Quick statistics (transactions, averages, extremes) */
-    const [quickStats, setQuickStats] = useState(null)
+    const [quickStats, setQuickStats] = useState<AnalyticsQuickStats>(defaultQuickStats)
 
     // ─── API Methods ─────────────────────────────────────────────────
 
@@ -53,13 +138,13 @@ export function useAnalytics() {
             const data = response.data
 
             // Update all state variables with fetched data
-            setOverview(data.overview)
-            setSpendingTrend(data.spending_trend || [])
-            setMonthlyComparison(data.monthly_comparison || [])
+            setOverview(data.overview || defaultOverview)
+            setSpendingTrend(Array.isArray(data.spending_trend) ? data.spending_trend : [])
+            setMonthlyComparison(Array.isArray(data.monthly_comparison) ? data.monthly_comparison : [])
             setPocketBreakdown(data.pocket_breakdown || { data: [], total: 0 })
-            setSavingsPerformance(data.savings_performance)
-            setInsights(data.insights || [])
-            setQuickStats(data.quick_stats)
+            setSavingsPerformance(data.savings_performance || defaultPerformance)
+            setInsights(Array.isArray(data.insights) ? data.insights : [])
+            setQuickStats(data.quick_stats || defaultQuickStats)
 
             return data
         } catch (error) {

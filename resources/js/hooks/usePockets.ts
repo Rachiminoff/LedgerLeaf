@@ -3,10 +3,31 @@ import axios from 'axios';
 
 const API_URL = '/api';
 
+interface PocketRecord {
+    id: number;
+    name: string;
+    icon?: string;
+    color?: string;
+    allocated?: number;
+    spent?: number;
+    remaining?: number;
+    progress?: number;
+    is_archived?: boolean;
+    description?: string;
+    [key: string]: unknown;
+}
+
+interface PocketFilters {
+    search: string;
+    status: string;
+    sort_by: string;
+    sort_order: string;
+}
+
 export function usePockets() {
     const [loading, setLoading] = useState(false);
-    const [pockets, setPockets] = useState([]);
-    const [filters, setFilters] = useState({
+    const [pockets, setPockets] = useState<PocketRecord[]>([]);
+    const [filters, setFilters] = useState<PocketFilters>({
         search: '',
         status: 'all',
         sort_by: 'name',

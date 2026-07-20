@@ -11,6 +11,9 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarEle
 
 interface ChartsSectionProps {
   className?: string
+  spendingData?: { labels: string[]; values: number[]; colors: string[] }
+  monthlyData?: { labels: string[]; values: number[] }
+  savingsData?: { labels: string[]; values: number[]; colors: string[] }
 }
 
 export const ChartsSection: React.FC<ChartsSectionProps> = ({ className = '' }) => {

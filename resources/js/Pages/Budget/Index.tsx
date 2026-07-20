@@ -45,6 +45,7 @@ interface PageProps {
             email: string;
         };
     };
+    [key: string]: unknown;
 }
 
 /**
@@ -158,8 +159,9 @@ export default function BudgetIndex(): JSX.Element {
      * Update safeBalance when the summary data changes.
      */
     useEffect((): void => {
-        if (summary?.safe_balance !== undefined && summary?.safe_balance !== null) {
-            setSafeBalance(Number(summary.safe_balance));
+        const summaryData = summary as Record<string, unknown> | null | undefined;
+        if (summaryData?.safe_balance !== undefined && summaryData?.safe_balance !== null) {
+            setSafeBalance(Number(summaryData.safe_balance));
         }
     }, [summary]);
 
@@ -221,8 +223,8 @@ export default function BudgetIndex(): JSX.Element {
      * @returns {Promise<void>}
      */
     const handleArchivePocket = async (id: number): Promise<void> => {
-        const pocket = pockets.find((p: any) => p.id === id);
-        const refundAmount = pocket?.allocated - pocket?.spent;
+        const pocket = (pockets as Array<Record<string, any>>).find((p: Record<string, any>) => p.id === id);
+        const refundAmount = (pocket?.allocated ?? 0) - (pocket?.spent ?? 0);
         
         setConfirmModal({
             isOpen: true,
@@ -251,8 +253,8 @@ export default function BudgetIndex(): JSX.Element {
      * @returns {Promise<void>}
      */
     const handleDeletePocket = async (id: number): Promise<void> => {
-        const pocket = pockets.find((p: any) => p.id === id);
-        const refundAmount = pocket?.allocated - pocket?.spent;
+        const pocket = (pockets as Array<Record<string, any>>).find((p: Record<string, any>) => p.id === id);
+        const refundAmount = (pocket?.allocated ?? 0) - (pocket?.spent ?? 0);
         
         setConfirmModal({
             isOpen: true,
@@ -462,7 +464,7 @@ export default function BudgetIndex(): JSX.Element {
                                 {/* Right Column - Insights & Charts (Desktop Only) */}
                                 {!isMobile && (
                                     <div className="space-y-4 md:space-y-6">
-                                        <BudgetHealthWidget health={summary?.budget_health || 0} />
+                                        <BudgetHealthWidget health={Number((summary as Record<string, unknown> | null | undefined)?.budget_health ?? 0)} />
                                         <AllocationChart pockets={pockets} />
                                         <BudgetInsights insights={insights} />
                                         <RecentActivity activities={recentActivity} />
@@ -473,7 +475,7 @@ export default function BudgetIndex(): JSX.Element {
                             {/* Mobile Stats & Insights (Shown Below Content on Mobile) */}
                             {isMobile && (
                                 <div className="mt-4 md:mt-6 space-y-4">
-                                    <BudgetHealthWidget health={summary?.budget_health || 0} />
+                                    <BudgetHealthWidget health={typeof summary?.budget_health === 'number' ? summary.budget_health : 0} />
                                     <AllocationChart pockets={pockets} />
                                     <BudgetInsights insights={insights} />
                                     <RecentActivity activities={recentActivity} />

@@ -2,8 +2,17 @@ import React from 'react';
 import { Icon } from '@iconify/react';
 import { router } from '@inertiajs/react';
 
-export default function AccountSettings() {
+interface AccountSettingsProps {
+    onUpdateSettings?: (settings: { dark_theme: boolean; email_notifications: boolean }) => Promise<void> | void;
+    onLogout?: () => void;
+}
+
+export default function AccountSettings({ onLogout }: AccountSettingsProps) {
     const handleLogout = () => {
+        if (onLogout) {
+            onLogout();
+            return;
+        }
         if (confirm('Are you sure you want to log out?')) {
             router.post('/logout');
         }

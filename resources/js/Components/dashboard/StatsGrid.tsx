@@ -15,9 +15,10 @@ interface Stat {
 interface StatsGridProps {
   stats: Stat[]
   onStatClick?: (id: number) => void
+  loading?: boolean
 }
 
-export const StatsGrid: React.FC<StatsGridProps> = ({ stats, onStatClick }) => {
+export const StatsGrid: React.FC<StatsGridProps> = ({ stats, onStatClick, loading }) => {
   const getTrendColor = (trendUp: boolean, value: string) => {
     if (value === '0' || value === 'N/A') return 'text-[#9A9A9A]'
     return trendUp ? 'text-[#5CB85C]' : 'text-[#FF5A5A]'

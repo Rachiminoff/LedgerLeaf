@@ -14,11 +14,33 @@ interface TransactionFilters {
     per_page?: number;
 }
 
+interface TransactionRecord {
+    id: number;
+    created_at?: string;
+    action?: string;
+    [key: string]: unknown;
+}
+
+interface TransactionSummary {
+    total?: number;
+    by_action?: Array<{ action?: string }>;
+    [key: string]: unknown;
+}
+
+interface TransactionPagination {
+    last_page?: number;
+    from?: number;
+    to?: number;
+    total?: number;
+    current_page?: number;
+    [key: string]: unknown;
+}
+
 export function useTransactions() {
-    const [transactions, setTransactions] = useState([]);
+    const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
     const [loading, setLoading] = useState(false);
-    const [summary, setSummary] = useState(null);
-    const [pagination, setPagination] = useState(null);
+    const [summary, setSummary] = useState<TransactionSummary | null>(null);
+    const [pagination, setPagination] = useState<TransactionPagination | null>(null);
     const [filters, setFilters] = useState<TransactionFilters>({
         date_range: 'this_month',
         search: '',

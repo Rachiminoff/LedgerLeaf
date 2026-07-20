@@ -1,12 +1,12 @@
 import React from 'react';
 import { router } from '@inertiajs/react';
-import { Navigation } from '@/Components/Landing/Navigation';
-import { Hero } from '@/Components/Landing/Hero';
-import { Features } from '@/Components/Landing/Features';
-import { About } from '@/Components/Landing/About';
-import { Statistics } from '@/Components/Landing/Statistics';
-import { CTA } from '@/Components/Landing/CTA';
-import { Footer } from '@/Components/Landing/Footer';
+import { Navigation } from '@/Components/landing/Navigation';
+import { Hero } from '@/Components/landing/Hero';
+import { Features } from '@/Components/landing/Features';
+import { About } from '@/Components/landing/About';
+import { Statistics } from '@/Components/landing/Statistics';
+import { CTA } from '@/Components/landing/CTA';
+import { Footer } from '@/Components/landing/Footer';
 
 const LandingPage: React.FC = () => {
   const handleLogin = () => {

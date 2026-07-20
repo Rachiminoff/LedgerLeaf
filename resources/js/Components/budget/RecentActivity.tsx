@@ -1,6 +1,3 @@
-// resources/js/Components/budget/RecentActivity.tsx
-import { format } from 'date-fns';
-
 interface RecentActivityProps {
     activities: any[];
 }
@@ -31,7 +28,13 @@ export default function RecentActivity({ activities }: RecentActivityProps) {
                         <div className="flex-1">
                             <p className="text-sm text-white">{activity.description}</p>
                             <p className="text-xs text-[#9A9A9A]">
-                                {format(new Date(activity.created_at), 'MMM d, yyyy h:mm a')}
+                                {new Date(activity.created_at).toLocaleString('en-PH', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                })}
                             </p>
                         </div>
                         <div className="text-right">

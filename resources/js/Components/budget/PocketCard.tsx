@@ -10,6 +10,7 @@ interface PocketCardProps {
     onDelete: (id: number) => void;
     onAllocate: (id: number) => void;
     onRefund?: (id: number, amount: number) => void;
+    onSaveEdit?: (id: number, data: { name: string; allocated: number; description?: string }) => void;
 }
 
 export default function PocketCard({

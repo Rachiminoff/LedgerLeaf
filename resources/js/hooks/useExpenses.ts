@@ -3,14 +3,36 @@ import axios from 'axios';
 
 const API_URL = '/api';
 
+interface ExpenseRecord {
+    id: number;
+    description?: string;
+    [key: string]: unknown;
+}
+
+interface ExpenseSummary {
+    [key: string]: unknown;
+}
+
+interface ExpenseStats {
+    [key: string]: unknown;
+}
+
+interface ExpensePagination {
+    [key: string]: unknown;
+}
+
+interface ExpenseFilters {
+    [key: string]: unknown;
+}
+
 export function useExpenses() {
-    const [expenses, setExpenses] = useState([]);
+    const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
     const [loading, setLoading] = useState(false);
-    const [summary, setSummary] = useState(null);
-    const [stats, setStats] = useState(null);
-    const [insights, setInsights] = useState([]);
-    const [pagination, setPagination] = useState(null);
-    const [currentFilters, setCurrentFilters] = useState({});
+    const [summary, setSummary] = useState<ExpenseSummary | null>(null);
+    const [stats, setStats] = useState<ExpenseStats | null>(null);
+    const [insights, setInsights] = useState<unknown[]>([]);
+    const [pagination, setPagination] = useState<ExpensePagination | null>(null);
+    const [currentFilters, setCurrentFilters] = useState<ExpenseFilters>({});
 
     const fetchExpenses = async (filters: any = {}) => {
         setLoading(true);

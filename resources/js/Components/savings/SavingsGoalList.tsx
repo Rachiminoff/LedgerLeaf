@@ -9,6 +9,7 @@ interface SavingsGoalListProps {
     onDeleteGoal: (id: number) => void;
     onDeposit: (goal: any) => void;
     onWithdraw: (goal: any) => void;
+    isMobile?: boolean;
 }
 
 export default function SavingsGoalList({

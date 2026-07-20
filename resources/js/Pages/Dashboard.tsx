@@ -19,10 +19,11 @@ interface PageProps {
       id: number
       name: string
       email: string
-      email_verified_at?: string | null
+      email_verified_at?: string
       created_at: string
     }
   }
+  [key: string]: unknown
   stats: {
     total_balance: number
     safe_balance: number
@@ -77,7 +78,14 @@ interface PageProps {
  * Fetches real data from the database using hooks
  */
 const Dashboard: React.FC = () => {
-  const { auth, stats, summary, recentActivities, budgetCategories, insights } = usePage<PageProps>().props
+  const pageProps = usePage<PageProps>().props as PageProps & {
+    stats?: PageProps['stats']
+    summary?: PageProps['summary']
+    recentActivities?: PageProps['recentActivities']
+    budgetCategories?: PageProps['budgetCategories']
+    insights?: PageProps['insights']
+  }
+  const { auth, stats, summary, recentActivities, budgetCategories, insights } = pageProps
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(Date.now())
   const [loading, setLoading] = useState(true)
@@ -250,8 +258,8 @@ const Dashboard: React.FC = () => {
               {/* Left Column - 2/3 */}
               <div className="lg:col-span-2 space-y-6">
                 <BudgetCategories 
-                  categories={budgetCategories || []} 
                   onManage={() => router.visit('/budget')}
+                  onViewPocket={(id) => router.visit(`/budget?pocket=${id}`)}
                 />
                 <RecentActivity 
                   activities={recentActivities || []} 

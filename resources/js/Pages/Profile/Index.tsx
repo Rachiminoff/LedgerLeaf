@@ -3,13 +3,13 @@ import { usePage, router } from '@inertiajs/react';
 import { toastSuccess, toastError, toastWarning } from '@/Components/ui/Toast';
 import { Sidebar } from '@/Components/dashboard/Sidebar';
 import { TopNav } from '@/Components/dashboard/TopNav';
-import ProfileCard from '@/Components/Profile/ProfileCard';
-import FinancialOverview from '@/Components/Profile/FinancialOverview';
-import ProfileInformation from '@/Components/Profile/ProfileInformation';
-import ChangePasswordModal from '@/Components/Profile/ChangePasswordModal';
-import AccountSettings from '@/Components/Profile/AccountSettings';
-import DeleteAccount from '@/Components/Profile/DeleteAccount';
-import LoadingSkeleton from '@/Components/Profile/LoadingSkeleton';
+import ProfileCard from '@/Components/profile/ProfileCard';
+import FinancialOverview from '@/Components/profile/FinancialOverview';
+import ProfileInformation from '@/Components/profile/ProfileInformation';
+import ChangePasswordModal from '@/Components/profile/ChangePasswordModal';
+import AccountSettings from '@/Components/profile/AccountSettings';
+import DeleteAccount from '@/Components/profile/DeleteAccount';
+import LoadingSkeleton from '@/Components/profile/LoadingSkeleton';
 
 interface User {
     id: number;

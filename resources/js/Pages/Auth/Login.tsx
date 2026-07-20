@@ -21,7 +21,6 @@ const LoginPage: React.FC = () => {
       headerSubtitle="Sign in to continue to LedgerLeaf"
     >
       <DarkLogin
-        onSuccess={handleLoginSuccess}
         onNavigateToSignUp={handleNavigateToSignUp}
       />
     </DarkLayout>
