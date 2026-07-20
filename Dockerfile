@@ -6,14 +6,14 @@ RUN apt-get update && apt-get install -y \
     curl \
     unzip \
     zip \
+    nodejs \
+    npm \
     libzip-dev \
     libpng-dev \
     libjpeg62-turbo-dev \
     libfreetype6-dev \
     libonig-dev \
     libxml2-dev \
-    nodejs \
-    npm \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
         pdo_mysql \
@@ -22,32 +22,39 @@ RUN apt-get update && apt-get install -y \
         mbstring \
         exif \
         pcntl \
-        bcmath
+        bcmath \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# Set working directory
 WORKDIR /var/www
 
-# Copy project
+# Copy application
 COPY . .
 
 # Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install \
+    --no-dev \
+    --optimize-autoloader \
+    --no-interaction
 
-# Install JS dependencies
+# Install Node dependencies
 RUN npm install
 
-# Build frontend
+# Build frontend assets
 RUN npm run build
 
-# Laravel optimizations
-RUN cp .env.example .env || true
-
+# Clear Laravel caches
 RUN php artisan config:clear || true
 RUN php artisan route:clear || true
 RUN php artisan view:clear || true
+RUN php artisan cache:clear || true
 
+# Railway provides the PORT environment variable
 EXPOSE 8000
 
-CMD php artisan serve --host=0.0.0.0 --port=$PORT
+# Start Laravel
+CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]
