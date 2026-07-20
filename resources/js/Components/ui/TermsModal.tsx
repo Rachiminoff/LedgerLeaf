@@ -145,7 +145,7 @@ export default function TermsModal({
               If you have any questions about these Terms of Service, please contact us at:
             </p>
             <p className="text-sm text-[#5CB85C]">
-              support@ledgerleaf.com
+              tdy.alhassan@gmail.com
             </p>
           </div>
         </div>

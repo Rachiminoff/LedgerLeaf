@@ -25,7 +25,6 @@ export const Navigation: React.FC<NavigationProps> = ({
   const navLinks = [
     { label: 'Features', href: '#features' },
     { label: 'About', href: '#about' },
-    { label: 'Contact', href: '#contact' },
   ];
 
   const handleNavigation = (href: string) => {

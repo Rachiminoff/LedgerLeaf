@@ -171,11 +171,7 @@ export default function PrivacyModal({
             <div className="space-y-1 text-sm">
               <p className="text-[#9A9A9A]">
                 <span className="text-white">Email:</span>{' '}
-                <span className="text-[#5CB85C]">privacy@ledgerleaf.com</span>
-              </p>
-              <p className="text-[#9A9A9A]">
-                <span className="text-white">Address:</span>{' '}
-                <span className="text-[#9A9A9A]">123 Financial District, Suite 400</span>
+                <span className="text-[#5CB85C]">tdy.alhassan@gmail.com</span>
               </p>
               <p className="text-[#9A9A9A]">
                 <span className="text-white">Response Time:</span>{' '}
