@@ -6,6 +6,7 @@ use App\Models\Expense;
 use App\Models\Pocket;
 use App\Models\SavingsGoal;
 use App\Models\Transaction;
+use App\Models\Budget;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -199,6 +200,83 @@ class ReportController extends Controller
     }
 
     /**
+     * Get full report data for export
+     */
+    public function getFullReport(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
+            $endDate = $request->input('end_date', now()->endOfMonth()->toDateString());
+
+            // Expenses
+            $expenses = Expense::where('user_id', $user->id)
+                ->where('is_archived', false)
+                ->whereBetween('expense_date', [$startDate, $endDate])
+                ->with('pocket')
+                ->orderBy('expense_date', 'desc')
+                ->get();
+
+            // Savings Goals
+            $savings = SavingsGoal::where('user_id', $user->id)
+                ->where('is_archived', false)
+                ->get();
+
+            // Pockets
+            $pockets = Pocket::where('user_id', $user->id)
+                ->where('is_archived', false)
+                ->get();
+
+            // Budgets
+            $budgets = Budget::where('user_id', $user->id)
+                ->where('month_year', Carbon::now()->format('Y-m-01'))
+                ->with('categories')
+                ->first();
+
+            // Transactions
+            $transactions = Transaction::where('user_id', $user->id)
+                ->whereBetween('date', [$startDate, $endDate])
+                ->orderBy('date', 'desc')
+                ->get();
+
+            // Summary
+            $totalExpenses = $expenses->sum('amount');
+            $totalIncome = Transaction::where('user_id', $user->id)
+                ->where('type', 'income')
+                ->whereBetween('date', [$startDate, $endDate])
+                ->sum('amount');
+            $totalSavings = $savings->sum('current_amount');
+            $safeBalance = $user->safe_balance;
+
+            return response()->json([
+                'period' => [
+                    'start' => Carbon::parse($startDate)->format('M d, Y'),
+                    'end' => Carbon::parse($endDate)->format('M d, Y'),
+                ],
+                'summary' => [
+                    'total_income' => $totalIncome,
+                    'total_expenses' => $totalExpenses,
+                    'total_savings' => $totalSavings,
+                    'safe_balance' => $safeBalance,
+                    'net_balance' => $totalIncome - $totalExpenses,
+                ],
+                'expenses' => $expenses,
+                'pockets' => $pockets,
+                'savings' => $savings,
+                'budgets' => $budgets,
+                'transactions' => $transactions,
+                'user' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ],
+            ]);
+        } catch (\Exception $exception) {
+            Log::error('Full report error: ' . $exception->getMessage());
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    /**
      * Export report as CSV.
      *
      * @param Request $request
@@ -223,9 +301,19 @@ class ReportController extends Controller
                 'Content-Disposition' => 'attachment; filename="report_' . date('Y-m-d') . '.csv"',
             ];
 
-            $callback = function () use ($expenses) {
+            $callback = function () use ($expenses, $user) {
                 $file = fopen('php://output', 'w');
-                fputcsv($file, ['Date', 'Description', 'Pocket', 'Amount']);
+                
+                // Header row with more columns
+                fputcsv($file, [
+                    'Date', 
+                    'Description', 
+                    'Pocket', 
+                    'Amount',
+                    'Payment Method',
+                    'Merchant',
+                    'Type'
+                ]);
 
                 foreach ($expenses as $expense) {
                     fputcsv($file, [
@@ -233,8 +321,17 @@ class ReportController extends Controller
                         $expense->description,
                         $expense->pocket?->name ?? 'Uncategorized',
                         number_format($expense->amount, 2),
+                        $expense->payment_method ?? 'N/A',
+                        $expense->merchant ?? 'N/A',
+                        $expense->type ?? 'expense',
                     ]);
                 }
+
+                // Add summary rows
+                fputcsv($file, []);
+                fputcsv($file, ['Summary']);
+                fputcsv($file, ['Total Expenses', number_format($expenses->sum('amount'), 2)]);
+                fputcsv($file, ['Total Records', $expenses->count()]);
 
                 fclose($file);
             };
@@ -268,6 +365,7 @@ class ReportController extends Controller
             $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
             $endDate = $request->input('end_date', now()->endOfMonth()->toDateString());
 
+            // Get all data
             $expenses = Expense::where('user_id', $user->id)
                 ->where('is_archived', false)
                 ->whereBetween('expense_date', [$startDate, $endDate])
@@ -275,15 +373,27 @@ class ReportController extends Controller
                 ->orderBy('expense_date', 'desc')
                 ->get();
 
+            $pockets = Pocket::where('user_id', $user->id)
+                ->where('is_archived', false)
+                ->get();
+
+            $savings = SavingsGoal::where('user_id', $user->id)
+                ->where('is_archived', false)
+                ->get();
+
             $totalExpenses = $expenses->sum('amount');
             $totalIncome = Transaction::where('user_id', $user->id)
                 ->where('type', 'income')
                 ->whereBetween('date', [$startDate, $endDate])
                 ->sum('amount');
+            $totalSavings = $savings->sum('current_amount');
+            $safeBalance = $user->safe_balance;
 
             $data = [
                 'user' => $user,
                 'expenses' => $expenses,
+                'pockets' => $pockets,
+                'savings' => $savings,
                 'period' => [
                     'start' => Carbon::parse($startDate)->format('M d, Y'),
                     'end' => Carbon::parse($endDate)->format('M d, Y'),
@@ -291,6 +401,8 @@ class ReportController extends Controller
                 'summary' => [
                     'total_income' => $totalIncome,
                     'total_expenses' => $totalExpenses,
+                    'total_savings' => $totalSavings,
+                    'safe_balance' => $safeBalance,
                     'net_balance' => $totalIncome - $totalExpenses,
                 ],
                 'generated_at' => now()->format('F j, Y g:i A'),

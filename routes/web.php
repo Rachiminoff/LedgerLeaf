@@ -167,6 +167,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/category', [ReportController::class, 'category'])->name('category');
         Route::get('/export/csv', [ReportController::class, 'exportCsv'])->name('export.csv');
         Route::get('/export/pdf', [ReportController::class, 'exportPdf'])->name('export.pdf');
+        // Add this for full report
+        Route::get('/full', [ReportController::class, 'getFullReport'])->name('full');
     });
 
     // ─── Analytics ──────────────────────────────────────────────────
@@ -244,6 +246,9 @@ Route::middleware(['auth'])->group(function () {
         // ─── Notifications ────────────────────────────────────────────
         Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount'])
             ->name('notifications.unread-count');
+        
+        // ─── Reports ──────────────────────────────────────────────────
+        Route::get('/reports/full', [ReportController::class, 'getFullReport'])->name('reports.full');
     });
     
 });
