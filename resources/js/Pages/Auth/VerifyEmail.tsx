@@ -8,10 +8,11 @@ interface PageProps {
             id: number;
             email: string;
             name: string;
+            email_verified_at?: string | null;
         };
     };
     status?: string;
-    [key: string]: any; // Add index signature
+    [key: string]: any;
 }
 
 export default function VerifyEmail() {
@@ -19,14 +20,28 @@ export default function VerifyEmail() {
     const [isResending, setIsResending] = useState(false);
     const [resendStatus, setResendStatus] = useState<string | null>(null);
 
+    // Check if user is already verified
+    const isVerified = auth.user.email_verified_at !== null;
+
     const handleResend = async () => {
+        // Don't resend if already verified
+        if (isVerified) {
+            router.visit('/dashboard');
+            return;
+        }
+
         setIsResending(true);
         setResendStatus(null);
         
         try {
             await router.post('/email/verification-notification');
             setResendStatus('A new verification link has been sent to your email.');
-        } catch (error) {
+        } catch (error: any) {
+            // Handle 409 conflict (already verified)
+            if (error?.response?.status === 409) {
+                router.visit('/dashboard');
+                return;
+            }
             setResendStatus('Failed to send verification link. Please try again.');
         } finally {
             setIsResending(false);
@@ -36,6 +51,12 @@ export default function VerifyEmail() {
     const handleLogout = () => {
         router.post('/logout');
     };
+
+    // If already verified, redirect to dashboard
+    if (isVerified) {
+        router.visit('/dashboard');
+        return null;
+    }
 
     return (
         <>
