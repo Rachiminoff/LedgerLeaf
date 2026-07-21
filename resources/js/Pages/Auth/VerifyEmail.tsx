@@ -11,6 +11,7 @@ interface PageProps {
         };
     };
     status?: string;
+    [key: string]: any; // Add index signature
 }
 
 export default function VerifyEmail() {
