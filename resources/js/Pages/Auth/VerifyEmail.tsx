@@ -5,6 +5,7 @@ import { Icon } from '@iconify/react';
 interface PageProps {
     auth: {
         user: {
+            id: number;
             email: string;
             name: string;
         };
