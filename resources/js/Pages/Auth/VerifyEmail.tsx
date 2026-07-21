@@ -2,26 +2,13 @@ import React, { useState } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
 import { Icon } from '@iconify/react';
 
-interface PageProps {
-    auth: {
-        user: {
-            id: number;
-            email: string;
-            name: string;
-            email_verified_at?: string | null;
-        };
-    };
-    status?: string;
-    [key: string]: any;
-}
-
 export default function VerifyEmail() {
-    const { auth, status } = usePage<PageProps>().props;
+    const { auth, status } = usePage<any>().props;
     const [isResending, setIsResending] = useState(false);
     const [resendStatus, setResendStatus] = useState<string | null>(null);
 
     // Check if user is already verified
-    const isVerified = auth.user.email_verified_at !== null && auth.user.email_verified_at !== undefined;
+    const isVerified = auth?.user?.email_verified_at !== null && auth?.user?.email_verified_at !== undefined;
 
     const handleResend = async () => {
         // Don't resend if already verified
@@ -73,7 +60,7 @@ export default function VerifyEmail() {
                             We've sent a verification link to
                         </p>
                         <p className="text-sm font-medium text-white mt-1">
-                            {auth.user.email}
+                            {auth?.user?.email || ''}
                         </p>
                     </div>
 
