@@ -205,6 +205,67 @@ LedgerLeaf/
 
 ---
 
+# System Architecture
+
+LedgerLeaf follows a modern full-stack monolithic architecture that combines a Laravel backend with a React-based frontend through Inertia.js.
+
+The application is structured within a single Laravel project while providing a modern single-page application experience through React components and Inertia-powered navigation.
+
+## Frontend Layer
+
+The frontend layer is developed using React 19, TypeScript, Tailwind CSS, and Inertia.js.
+
+It is responsible for:
+
+- Building reusable UI components
+- Managing user interactions
+- Rendering dashboards and financial visualizations
+- Handling forms and client-side state
+- Providing a responsive interface optimized for desktop and mobile devices
+
+Inertia.js serves as the bridge between Laravel and React, allowing the application to use React components while maintaining Laravel's routing and server-side capabilities without requiring a separate API layer.
+
+## Backend Layer
+
+The backend is powered by Laravel 12 and PHP 8.4.
+
+It handles:
+
+- Application routing
+- Authentication and authorization
+- Business logic and financial calculations
+- Data validation
+- Report generation
+- Database operations using Laravel's ORM
+
+The backend manages the application's core features, including budgeting, pocket allocation, expense tracking, savings management, and analytics processing.
+
+## Database Layer
+
+LedgerLeaf uses MySQL as its relational database management system.
+
+The database stores and manages:
+
+- User accounts
+- Budget pockets
+- Expenses and transactions
+- Savings goals
+- Financial records
+- Application settings
+
+The relational database structure ensures consistency between users, budgets, expenses, and savings data.
+
+## Deployment Architecture
+
+LedgerLeaf is deployed using cloud-based services:
+
+- Render hosts the Laravel application, React frontend, and compiled assets.
+- Railway provides the managed MySQL database.
+
+This separation allows the application layer and database layer to be managed independently while maintaining a reliable connection between services.
+
+---
+
 # Getting Started
 
 ## Clone the Repository
