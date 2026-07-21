@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;  // Add this import
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -10,7 +9,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class User extends Authenticatable implements MustVerifyEmail  // Add MustVerifyEmail
+class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -75,7 +74,6 @@ class User extends Authenticatable implements MustVerifyEmail  // Add MustVerify
         'total_remaining_in_pockets',
         'initials',
         'display_name',
-        'is_verified',  // Add this
     ];
 
     // ─── Relationships ─────────────────────────────────────────────
@@ -274,14 +272,6 @@ class User extends Authenticatable implements MustVerifyEmail  // Add MustVerify
     public function getDisplayNameAttribute(): string
     {
         return $this->name ?? $this->email;
-    }
-
-    /**
-     * Check if user's email is verified.
-     */
-    public function getIsVerifiedAttribute(): bool
-    {
-        return !is_null($this->email_verified_at);
     }
 
     // ─── Helper Methods ────────────────────────────────────────────
@@ -544,22 +534,6 @@ class User extends Authenticatable implements MustVerifyEmail  // Add MustVerify
         return $query->whereHas('roles', function ($q) use ($role) {
             $q->where('name', $role);
         });
-    }
-
-    /**
-     * Scope users who are verified.
-     */
-    public function scopeVerified($query)
-    {
-        return $query->whereNotNull('email_verified_at');
-    }
-
-    /**
-     * Scope users who are not verified.
-     */
-    public function scopeUnverified($query)
-    {
-        return $query->whereNull('email_verified_at');
     }
 
     // ─── Boot Methods ──────────────────────────────────────────────

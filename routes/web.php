@@ -4,7 +4,6 @@ use App\Http\Controllers\AddFundsController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
@@ -60,46 +59,9 @@ Route::post('/reset-password', [NewPasswordController::class, 'store'])
     ->middleware('guest')
     ->name('password.update');
 
-// ─── Email Verification Routes ──────────────────────────────────
+// ─── Protected Routes (No Email Verification Required) ─────────
 
 Route::middleware(['auth'])->group(function () {
-    // Email verification notice - redirect if already verified
-    Route::get('/email/verify', function () {
-        $user = auth()->user();
-        if ($user && $user->hasVerifiedEmail()) {
-            return redirect('/dashboard');
-        }
-        return Inertia::render('Auth/VerifyEmail');
-    })->name('verification.notice');
-
-    // Email verification handler
-    Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
-        $user = \App\Models\User::findOrFail($id);
-
-        if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
-            return redirect('/email/verify')->with('error', 'Invalid verification link.');
-        }
-
-        if ($user->hasVerifiedEmail()) {
-            return redirect('/dashboard')->with('message', 'Email already verified.');
-        }
-
-        if ($user->markEmailAsVerified()) {
-            event(new \Illuminate\Auth\Events\Verified($user));
-        }
-
-        return redirect('/dashboard')->with('message', 'Email verified successfully!');
-    })->middleware(['signed'])->name('verification.verify');
-
-    // Resend verification email - redirect if already verified
-    Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
-        ->middleware(['throttle:6,1'])
-        ->name('verification.send');
-});
-
-// ─── Protected Routes (Require Email Verification) ─────────────
-
-Route::middleware(['auth', 'verified'])->group(function () {
 
     // ───  Help Center ────────────────────────────────────────────
     Route::inertia('/help', 'HelpCenter')->name('help');
