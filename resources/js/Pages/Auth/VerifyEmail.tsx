@@ -21,7 +21,7 @@ export default function VerifyEmail() {
     const [resendStatus, setResendStatus] = useState<string | null>(null);
 
     // Check if user is already verified
-    const isVerified = auth.user.email_verified_at !== null;
+    const isVerified = auth.user.email_verified_at !== null && auth.user.email_verified_at !== undefined;
 
     const handleResend = async () => {
         // Don't resend if already verified
