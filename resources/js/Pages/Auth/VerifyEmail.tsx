@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
 import { Icon } from '@iconify/react';
 
@@ -10,13 +10,19 @@ export default function VerifyEmail() {
     // Check if user is already verified
     const isVerified = auth?.user?.email_verified_at !== null && auth?.user?.email_verified_at !== undefined;
 
-    const handleResend = async () => {
-        // Don't resend if already verified
+    // Redirect if already verified
+    useEffect(() => {
         if (isVerified) {
             router.visit('/dashboard');
-            return;
         }
+    }, [isVerified]);
 
+    // If already verified, don't render anything (will redirect)
+    if (isVerified) {
+        return null;
+    }
+
+    const handleResend = async () => {
         setIsResending(true);
         setResendStatus(null);
         
@@ -38,12 +44,6 @@ export default function VerifyEmail() {
     const handleLogout = () => {
         router.post('/logout');
     };
-
-    // If already verified, redirect to dashboard
-    if (isVerified) {
-        router.visit('/dashboard');
-        return null;
-    }
 
     return (
         <>

@@ -63,7 +63,7 @@ Route::post('/reset-password', [NewPasswordController::class, 'store'])
 // ─── Email Verification Routes ──────────────────────────────────
 
 Route::middleware(['auth'])->group(function () {
-    // Email verification notice
+    // Email verification notice - redirect if already verified
     Route::get('/email/verify', function () {
         $user = auth()->user();
         if ($user && $user->hasVerifiedEmail()) {
@@ -91,7 +91,7 @@ Route::middleware(['auth'])->group(function () {
         return redirect('/dashboard')->with('message', 'Email verified successfully!');
     })->middleware(['signed'])->name('verification.verify');
 
-    // Resend verification email - Using controller with proper handling
+    // Resend verification email - redirect if already verified
     Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
         ->middleware(['throttle:6,1'])
         ->name('verification.send');
