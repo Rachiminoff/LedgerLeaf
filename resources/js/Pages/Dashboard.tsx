@@ -7,7 +7,6 @@ import { StatsGrid } from '@/Components/dashboard/StatsGrid'
 import { ChartsSection } from '@/Components/dashboard/ChartsSection'
 import { RecentActivity } from '@/Components/dashboard/RecentActivity'
 import { BudgetCategories } from '@/Components/dashboard/BudgetCategories'
-import { QuickActions } from '@/Components/dashboard/QuickActions'
 import { InsightsPanel } from '@/Components/dashboard/InsightsPanel'
 import { useBudget } from '@/hooks/useBudget'
 import { useExpenses } from '@/hooks/useExpenses'
@@ -270,7 +269,6 @@ const Dashboard: React.FC = () => {
 
               {/* Right Column - 1/3 */}
               <div className="space-y-6">
-                <QuickActions />
                 <InsightsPanel insights={insights || []} />
               </div>
             </div>

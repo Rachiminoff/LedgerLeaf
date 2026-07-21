@@ -59,12 +59,53 @@ Route::post('/reset-password', [NewPasswordController::class, 'store'])
     ->middleware('guest')
     ->name('password.update');
 
-// ─── Protected Routes ──────────────────────────────────────────
+// ─── Email Verification Routes ──────────────────────────────────
 
 Route::middleware(['auth'])->group(function () {
+    // Email verification notice
+    Route::get('/email/verify', function () {
+        return Inertia::render('Auth/VerifyEmail');
+    })->name('verification.notice');
+
+    // Email verification handler
+    Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
+        $user = \App\Models\User::findOrFail($id);
+
+        if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+            return redirect('/email/verify')->with('error', 'Invalid verification link.');
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return redirect('/dashboard')->with('message', 'Email already verified.');
+        }
+
+        if ($user->markEmailAsVerified()) {
+            event(new \Illuminate\Auth\Events\Verified($user));
+        }
+
+        return redirect('/dashboard')->with('message', 'Email verified successfully!');
+    })->middleware(['signed'])->name('verification.verify');
+
+    // Resend verification email
+    Route::post('/email/verification-notification', function (\Illuminate\Http\Request $request) {
+        $user = $request->user();
+
+        if ($user->hasVerifiedEmail()) {
+            return redirect('/dashboard');
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return back()->with('message', 'Verification link sent!');
+    })->middleware(['throttle:6,1'])->name('verification.send');
+});
+
+// ─── Protected Routes (Require Email Verification) ─────────────
+
+Route::middleware(['auth', 'verified'])->group(function () {
 
     // ───  Help Center ────────────────────────────────────────────
-    Route::inertia('/help', 'HelpCenter')->middleware(['auth', 'verified'])->name('help');
+    Route::inertia('/help', 'HelpCenter')->name('help');
     
     // ─── Dashboard ────────────────────────────────────────────
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -167,7 +208,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/category', [ReportController::class, 'category'])->name('category');
         Route::get('/export/csv', [ReportController::class, 'exportCsv'])->name('export.csv');
         Route::get('/export/pdf', [ReportController::class, 'exportPdf'])->name('export.pdf');
-        // Add this for full report
         Route::get('/full', [ReportController::class, 'getFullReport'])->name('full');
     });
 

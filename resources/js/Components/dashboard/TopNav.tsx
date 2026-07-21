@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Icon } from '@iconify/react'
 import { router } from '@inertiajs/react'
 
@@ -11,7 +11,6 @@ interface TopNavProps {
     email: string
     avatar?: string
   }
-  onSearch?: (query: string) => void
   onNotificationsClick?: () => void
   showBackButton?: boolean
   onBack?: () => void
@@ -22,21 +21,10 @@ export const TopNav: React.FC<TopNavProps> = ({
   onMenuToggle,
   notificationCount = 0,
   user,
-  onSearch,
   onNotificationsClick,
   showBackButton = false,
   onBack,
 }) => {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [isSearchFocused, setIsSearchFocused] = useState(false)
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (onSearch) {
-      onSearch(searchQuery)
-    }
-  }
-
   const handleNotificationsClick = () => {
     if (onNotificationsClick) {
       onNotificationsClick()
@@ -67,41 +55,13 @@ export const TopNav: React.FC<TopNavProps> = ({
               <Icon icon="mdi:menu" className="h-6 w-6" />
             </button>
           )}
-          <h1 className="text-xl sm:text-2xl font-light text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-light text-white tracking-tight truncate max-w-[120px] sm:max-w-[200px]">
             {title}
           </h1>
         </div>
 
         {/* Right - Actions */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Search - Desktop */}
-          <form
-            onSubmit={handleSearch}
-            className={`hidden md:flex items-center bg-[#1A1A1A] border rounded-xl px-3 py-2 transition-all duration-200 ${
-              isSearchFocused ? 'border-[#5CB85C] ring-1 ring-[#5CB85C]/20' : 'border-[#242424]'
-            }`}
-          >
-            <Icon icon="mdi:search" className="h-4 w-4 text-[#9A9A9A]" />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-              className="bg-transparent border-none outline-none text-sm text-white placeholder:text-[#9A9A9A] w-40 lg:w-56 ml-2"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="text-[#9A9A9A] hover:text-white transition-colors"
-              >
-                <Icon icon="mdi:close" className="h-4 w-4" />
-              </button>
-            )}
-          </form>
-
           {/* Notifications */}
           <button
             onClick={handleNotificationsClick}
