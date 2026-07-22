@@ -178,12 +178,61 @@ class AnalyticsController extends Controller
         }
 
         try {
+            // Get pockets data
+            $pockets = Pocket::where('user_id', $data['user']->id)
+                ->where('is_archived', false)
+                ->orderBy('name')
+                ->get();
+
+            // Calculate period spent for each pocket
+            $startDate = $data['period']['start'] ?? now()->startOfMonth()->format('M d, Y');
+            $endDate = $data['period']['end'] ?? now()->endOfMonth()->format('M d, Y');
+            
+            // Convert to actual dates for querying
+            $start = Carbon::parse($startDate)->toDateString();
+            $end = Carbon::parse($endDate)->toDateString();
+
+            foreach ($pockets as $pocket) {
+                $spent = Expense::where('user_id', $data['user']->id)
+                    ->where('pocket_id', $pocket->id)
+                    ->where('is_archived', false)
+                    ->whereBetween('expense_date', [$start, $end])
+                    ->sum('amount');
+                
+                $pocket->period_spent = $spent;
+                $pocket->period_utilization = $pocket->allocated > 0 
+                    ? round(($spent / $pocket->allocated) * 100, 1) 
+                    : 0;
+            }
+
+            // Get monthly trend
+            $monthlyTrend = [];
+            $expenses = $data['expenses'] ?? collect();
+            if ($expenses->count() > 0) {
+                $trendData = $expenses->groupBy(function ($expense) {
+                    return Carbon::parse($expense->expense_date)->format('M');
+                })->map(function ($group) {
+                    return $group->sum('amount');
+                });
+                
+                foreach ($trendData as $month => $amount) {
+                    $monthlyTrend[] = [
+                        'month' => $month,
+                        'amount' => $amount,
+                    ];
+                }
+            }
+
             $pdfData = [
+                'user' => $data['user'],
+                'currency' => '₱',
                 'generated_at' => $data['generated_at'],
                 'period' => $data['period'],
                 'summary' => $data['summary'],
-                'expenses' => $data['expenses'],
+                'expenses' => $expenses,
                 'savings' => $data['savings'],
+                'pockets' => $pockets,
+                'monthly_trend' => $monthlyTrend,
             ];
 
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.analytics', $pdfData);
@@ -198,7 +247,6 @@ class AnalyticsController extends Controller
             ], 500);
         }
     }
-
     /**
      * Export as Excel using Spatie Simple Excel.
      *
@@ -359,13 +407,15 @@ class AnalyticsController extends Controller
 
     /**
      * Get date range based on period.
+     * 
+     * CHANGED: Made public for use by ReportController
      *
      * @param string $period
      * @param string|null $startDate
      * @param string|null $endDate
      * @return array
      */
-    private function getDateRange(string $period, ?string $startDate, ?string $endDate): array
+    public function getDateRange(string $period, ?string $startDate, ?string $endDate): array
     {
         $now = now();
 
@@ -405,12 +455,14 @@ class AnalyticsController extends Controller
 
     /**
      * Get financial overview (income, expenses, savings, remaining).
+     * 
+     * CHANGED: Made public for use by ReportController
      *
      * @param mixed $user
      * @param array $dates
      * @return array
      */
-    private function getFinancialOverview($user, array $dates): array
+    public function getFinancialOverview($user, array $dates): array
     {
         $start = $dates['start'];
         $end = $dates['end'];
@@ -458,12 +510,14 @@ class AnalyticsController extends Controller
 
     /**
      * Get daily spending trend.
+     * 
+     * CHANGED: Made public for use by ReportController
      *
      * @param mixed $user
      * @param array $dates
      * @return array
      */
-    private function getSpendingTrend($user, array $dates): array
+    public function getSpendingTrend($user, array $dates): array
     {
         $start = Carbon::parse($dates['start']);
         $end = Carbon::parse($dates['end']);
@@ -497,12 +551,14 @@ class AnalyticsController extends Controller
 
     /**
      * Get monthly comparison data.
+     * 
+     * CHANGED: Made public for use by ReportController
      *
      * @param mixed $user
      * @param array $dates
      * @return array
      */
-    private function getMonthlyComparison($user, array $dates): array
+    public function getMonthlyComparison($user, array $dates): array
     {
         $start = Carbon::parse($dates['start']);
         $end = Carbon::parse($dates['end']);
@@ -544,12 +600,14 @@ class AnalyticsController extends Controller
 
     /**
      * Get spending breakdown by pocket.
+     * 
+     * CHANGED: Made public for use by ReportController
      *
      * @param mixed $user
      * @param array $dates
      * @return array
      */
-    private function getPocketBreakdown($user, array $dates): array
+    public function getPocketBreakdown($user, array $dates): array
     {
         $start = $dates['start'];
         $end = $dates['end'];
@@ -594,11 +652,13 @@ class AnalyticsController extends Controller
 
     /**
      * Get savings performance data.
+     * 
+     * CHANGED: Made public for use by ReportController
      *
      * @param mixed $user
      * @return array
      */
-    private function getSavingsPerformance($user): array
+    public function getSavingsPerformance($user): array
     {
         $goals = SavingsGoal::where('user_id', $user->id)
             ->where('is_archived', false)
@@ -627,12 +687,14 @@ class AnalyticsController extends Controller
 
     /**
      * Generate financial insights.
+     * 
+     * CHANGED: Made public for use by ReportController
      *
      * @param mixed $user
      * @param array $dates
      * @return array
      */
-    private function getFinancialInsights($user, array $dates): array
+    public function getFinancialInsights($user, array $dates): array
     {
         $insights = [];
         $start = $dates['start'];
@@ -726,12 +788,14 @@ class AnalyticsController extends Controller
 
     /**
      * Get quick statistics.
+     * 
+     * CHANGED: Made public for use by ReportController
      *
      * @param mixed $user
      * @param array $dates
      * @return array
      */
-    private function getQuickStatistics($user, array $dates): array
+    public function getQuickStatistics($user, array $dates): array
     {
         $start = $dates['start'];
         $end = $dates['end'];
