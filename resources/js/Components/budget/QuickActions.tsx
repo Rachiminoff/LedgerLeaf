@@ -1,4 +1,4 @@
-import { Plus, TrendingUp, ArrowRightLeft, Clock, BarChart3 } from 'lucide-react';
+import { Plus, TrendingUp, ArrowRightLeft } from 'lucide-react';
 
 interface QuickActionsProps {
     onCreatePocket: () => void;
@@ -32,26 +32,10 @@ export default function QuickActions({ onCreatePocket, onAllocateFunds, onTransf
             onClick: onTransferFunds,
             description: 'Move between pockets',
         },
-        {
-            id: 'history',
-            label: 'Transaction History',
-            icon: Clock,
-            color: '#F59E0B',
-            onClick: () => {},
-            description: 'View all transactions',
-        },
-        {
-            id: 'reports',
-            label: 'Budget Reports',
-            icon: BarChart3,
-            color: '#EC4899',
-            onClick: () => {},
-            description: 'View budget analytics',
-        },
     ];
 
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             {actions.map((action) => {
                 const Icon = action.icon;
                 return (

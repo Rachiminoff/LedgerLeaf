@@ -1,4 +1,3 @@
-// resources/js/app.tsx
 import '../css/app.css';
 import './bootstrap';
 
@@ -7,15 +6,17 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { ToastProvider } from '@/Components/ui/Toast';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'LedgerLeaf';
 
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    title: (title) => (title ? `${title} - ${appName}` : appName),
+
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.tsx`,
             import.meta.glob('./Pages/**/*.tsx'),
         ),
+
     setup({ el, App, props }) {
         const root = createRoot(el);
 
@@ -26,6 +27,7 @@ createInertiaApp({
             </>
         );
     },
+
     progress: {
         color: '#5CB85C',
     },

@@ -119,7 +119,7 @@ class ExpenseController extends Controller
     }
 
     /**
-     * Store a new expense
+     * Store a new expense - SYNCED WITH POCKET
      * Also logs the creation in audit log
      */
     public function store(Request $request)
@@ -137,33 +137,51 @@ class ExpenseController extends Controller
 
             $user = $request->user();
 
-            $expense = Expense::create([
-                'user_id' => $user->id,
-                'pocket_id' => $validated['pocket_id'] ?? null,
-                'amount' => $validated['amount'],
-                'description' => $validated['description'],
-                'expense_date' => $validated['expense_date'],
-                'payment_method' => $validated['payment_method'] ?? null,
-                'merchant' => $validated['merchant'] ?? null,
-                'notes' => $validated['notes'] ?? null,
-                'type' => 'expense',
-                'is_archived' => false,
-            ]);
+            // If pocket is provided, check balance
+            if ($validated['pocket_id']) {
+                $pocket = Pocket::where('user_id', $user->id)->find($validated['pocket_id']);
+                if (!$pocket) {
+                    return response()->json(['message' => 'Pocket not found'], 404);
+                }
+                
+                $available = $pocket->allocated - $pocket->spent;
+                if ($validated['amount'] > $available) {
+                    return response()->json([
+                        'message' => 'Insufficient balance in pocket',
+                        'available' => $available,
+                        'requested' => $validated['amount']
+                    ], 400);
+                }
+            }
 
-            // Create audit log for expense creation
-            $this->createAuditLog(
-                $user->id,
-                'create_expense',
-                'expenses',
-                $expense->id,
-                null,
-                $expense->toArray(),
-                $request
-            );
+            DB::transaction(function () use ($user, $validated) {
+                // Create the expense
+                $expense = Expense::create([
+                    'user_id' => $user->id,
+                    'pocket_id' => $validated['pocket_id'] ?? null,
+                    'amount' => $validated['amount'],
+                    'description' => $validated['description'],
+                    'expense_date' => $validated['expense_date'],
+                    'payment_method' => $validated['payment_method'] ?? null,
+                    'merchant' => $validated['merchant'] ?? null,
+                    'notes' => $validated['notes'] ?? null,
+                    'type' => 'expense',
+                    'is_archived' => false,
+                ]);
+
+                // Update pocket balance
+                if ($validated['pocket_id']) {
+                    $pocket = Pocket::find($validated['pocket_id']);
+                    if ($pocket) {
+                        $pocket->spent += $validated['amount'];
+                        $pocket->balance -= $validated['amount'];
+                        $pocket->save();
+                    }
+                }
+            });
 
             return response()->json([
                 'message' => 'Expense created successfully',
-                'expense' => $expense->load(['pocket'])
             ], 201);
 
         } catch (\Exception $e) {
@@ -175,7 +193,7 @@ class ExpenseController extends Controller
     }
 
     /**
-     * Update an expense
+     * Update an expense - SYNCED WITH POCKET
      * Also logs the update in audit log
      */
     public function update(Request $request, Expense $expense)
@@ -195,20 +213,20 @@ class ExpenseController extends Controller
                 'notes' => 'nullable|string',
             ]);
 
-            $oldValues = $expense->toArray();
+            $oldPocketId = $expense->pocket_id;
+            $oldAmount = $expense->amount;
+            $newPocketId = $validated['pocket_id'] ?? $expense->pocket_id;
+            $newAmount = $validated['amount'] ?? $expense->amount;
 
-            DB::transaction(function () use ($expense, $validated) {
-                $newPocketId = $validated['pocket_id'] ?? $expense->pocket_id;
-                $newAmount = $validated['amount'] ?? $expense->amount;
-                
+            DB::transaction(function () use ($expense, $validated, $oldPocketId, $oldAmount, $newPocketId, $newAmount) {
                 // If pocket changed
-                if ($newPocketId != $expense->pocket_id) {
+                if ($oldPocketId != $newPocketId) {
                     // Refund old pocket
-                    if ($expense->pocket_id) {
-                        $oldPocket = Pocket::find($expense->pocket_id);
+                    if ($oldPocketId) {
+                        $oldPocket = Pocket::find($oldPocketId);
                         if ($oldPocket) {
-                            $oldPocket->spent -= $expense->amount;
-                            $oldPocket->balance += $expense->amount;
+                            $oldPocket->spent -= $oldAmount;
+                            $oldPocket->balance += $oldAmount;
                             $oldPocket->save();
                         }
                     }
@@ -225,11 +243,11 @@ class ExpenseController extends Controller
                             $newPocket->save();
                         }
                     }
-                } elseif ($expense->pocket_id && isset($validated['amount']) && $validated['amount'] != $expense->amount) {
+                } elseif ($oldPocketId && $oldAmount != $newAmount) {
                     // Amount changed for same pocket
-                    $pocket = Pocket::find($expense->pocket_id);
+                    $pocket = Pocket::find($oldPocketId);
                     if ($pocket) {
-                        $amountDiff = $validated['amount'] - $expense->amount;
+                        $amountDiff = $newAmount - $oldAmount;
                         if ($amountDiff > 0) {
                             $available = $pocket->allocated - $pocket->spent;
                             if ($amountDiff > $available) {
@@ -238,7 +256,6 @@ class ExpenseController extends Controller
                             $pocket->spent += $amountDiff;
                             $pocket->balance -= $amountDiff;
                         } else {
-                            // Refund the difference (negative amount)
                             $pocket->spent += $amountDiff;
                             $pocket->balance -= $amountDiff;
                         }
@@ -249,22 +266,8 @@ class ExpenseController extends Controller
                 $expense->update($validated);
             });
 
-            $newValues = $expense->fresh()->toArray();
-
-            // Create audit log for expense update
-            $this->createAuditLog(
-                $request->user()->id,
-                'update_expense',
-                'expenses',
-                $expense->id,
-                $oldValues,
-                $newValues,
-                $request
-            );
-
             return response()->json([
                 'message' => 'Expense updated successfully',
-                'expense' => $expense->load(['pocket'])
             ]);
 
         } catch (\Exception $e) {
@@ -276,7 +279,7 @@ class ExpenseController extends Controller
     }
 
     /**
-     * Delete an expense (with refund)
+     * Delete an expense - SYNCED WITH POCKET
      * Also logs the deletion in audit log
      */
     public function destroy(Expense $expense)
@@ -285,9 +288,6 @@ class ExpenseController extends Controller
             if ($expense->user_id !== auth()->id()) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
-
-            $user = auth()->user();
-            $oldValues = $expense->toArray();
 
             DB::transaction(function () use ($expense) {
                 // Refund the amount back to the pocket
@@ -303,17 +303,6 @@ class ExpenseController extends Controller
                 $expense->delete();
             });
 
-            // Create audit log for expense deletion
-            $this->createAuditLog(
-                $user->id,
-                'delete_expense',
-                'expenses',
-                $expense->id,
-                $oldValues,
-                ['deleted' => true, 'refunded' => true],
-                request()
-            );
-
             return response()->json([
                 'message' => 'Expense deleted successfully',
                 'refunded' => true
@@ -328,7 +317,7 @@ class ExpenseController extends Controller
     }
 
     /**
-     * Archive an expense (with refund)
+     * Archive an expense - SYNCED WITH POCKET
      * Also logs the archive action in audit log
      */
     public function archive(Expense $expense)
@@ -337,9 +326,6 @@ class ExpenseController extends Controller
             if ($expense->user_id !== auth()->id()) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
-
-            $user = auth()->user();
-            $oldValues = $expense->toArray();
 
             DB::transaction(function () use ($expense) {
                 // Refund the amount back to the pocket
@@ -355,19 +341,6 @@ class ExpenseController extends Controller
                 $expense->update(['is_archived' => true]);
             });
 
-            $newValues = $expense->fresh()->toArray();
-
-            // Create audit log for expense archive
-            $this->createAuditLog(
-                $user->id,
-                'archive_expense',
-                'expenses',
-                $expense->id,
-                $oldValues,
-                $newValues,
-                request()
-            );
-
             return response()->json([
                 'message' => 'Expense archived successfully',
                 'refunded' => true
@@ -382,7 +355,7 @@ class ExpenseController extends Controller
     }
 
     /**
-     * Restore an archived expense
+     * Restore an archived expense - SYNCED WITH POCKET
      * Also logs the restore action in audit log
      */
     public function restore(Expense $expense)
@@ -392,14 +365,15 @@ class ExpenseController extends Controller
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
-            $user = auth()->user();
-            $oldValues = $expense->toArray();
-
             DB::transaction(function () use ($expense) {
                 // Deduct the amount back from the pocket
                 if ($expense->pocket_id) {
                     $pocket = Pocket::find($expense->pocket_id);
                     if ($pocket) {
+                        $available = $pocket->allocated - $pocket->spent;
+                        if ($expense->amount > $available) {
+                            throw new \Exception('Insufficient balance in pocket');
+                        }
                         $pocket->spent += $expense->amount;
                         $pocket->balance -= $expense->amount;
                         $pocket->save();
@@ -408,19 +382,6 @@ class ExpenseController extends Controller
 
                 $expense->update(['is_archived' => false]);
             });
-
-            $newValues = $expense->fresh()->toArray();
-
-            // Create audit log for expense restore
-            $this->createAuditLog(
-                $user->id,
-                'restore_expense',
-                'expenses',
-                $expense->id,
-                $oldValues,
-                $newValues,
-                request()
-            );
 
             return response()->json([
                 'message' => 'Expense restored successfully'

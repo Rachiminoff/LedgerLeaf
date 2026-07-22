@@ -55,6 +55,7 @@ export default function SavingsIndex() {
     const [selectedGoal, setSelectedGoal] = useState<any>(null)
     const [editingGoal, setEditingGoal] = useState<any>(null)
     const [localLoading, setLocalLoading] = useState(false)
+    const [refreshKey, setRefreshKey] = useState(Date.now())
 
     // Confirmation Modal State
     const [confirmModal, setConfirmModal] = useState<ConfirmModalConfig>({
@@ -83,6 +84,7 @@ export default function SavingsIndex() {
 
     const loading = localLoading || hookLoading
 
+    // Initial data load
     useEffect(() => {
         fetchGoals()
     }, [])
@@ -99,9 +101,15 @@ export default function SavingsIndex() {
 
     // ─── Refresh Data ──────────────────────────────────────────────
     const refreshData = async () => {
+        setRefreshKey(Date.now())
         await fetchGoals()
         // Reload the page props to get updated summary
         router.reload({ only: ['goals', 'summary', 'recent_transactions'] })
+    }
+
+    // ─── Force refresh after any data change ──────────────────────
+    const handleDataChange = async () => {
+        await refreshData()
     }
 
     const handleLogout = () => {
@@ -209,7 +217,7 @@ export default function SavingsIndex() {
             title: 'Delete Goal',
             message: `Are you sure you want to permanently delete "${goal?.name}"?${
                 currentAmount > 0 
-                    ? `\n\n💰 ₱${currentAmount.toFixed(2)} will be refunded to your Safe Balance.` 
+                    ? `\n\n₱${currentAmount.toFixed(2)} will be refunded to your Safe Balance.` 
                     : ''
             }${currentAmount === 0 ? '\n\nThis action cannot be undone.' : ''}`,
             type: 'danger',
@@ -292,6 +300,7 @@ export default function SavingsIndex() {
                                         <EmptyState onCreateGoal={() => setIsGoalModalOpen(true)} />
                                     ) : (
                                         <SavingsGoalList
+                                            key={refreshKey}
                                             goals={activeGoals}
                                             onViewGoal={handleViewGoal}
                                             onEditGoal={handleEditGoal}

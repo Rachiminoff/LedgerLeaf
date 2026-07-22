@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { Fragment } from 'react'
-import { X, AlertCircle } from 'lucide-react'
+import { X, AlertCircle, Calendar } from 'lucide-react'
 import { Icon } from '@iconify/react'
 
 interface GoalModalProps {
@@ -107,6 +107,67 @@ export default function GoalModal({
         return tomorrow.toISOString().split('T')[0]
     }
 
+    // Date helper functions
+    const getTodayDate = () => {
+        return new Date().toISOString().split('T')[0]
+    }
+
+    const getMaxDate = () => {
+        const date = new Date()
+        date.setFullYear(date.getFullYear() + 5)
+        return date.toISOString().split('T')[0]
+    }
+
+    const formatDisplayDate = (dateString: string) => {
+        if (!dateString) return ''
+        const date = new Date(dateString + 'T00:00:00')
+        return date.toLocaleDateString('en-PH', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+        })
+    }
+
+    const getDayOfWeek = (dateString: string) => {
+        if (!dateString) return ''
+        const date = new Date(dateString + 'T00:00:00')
+        return date.toLocaleDateString('en-PH', {
+            weekday: 'short',
+        })
+    }
+
+    const handleDateChange = (value: string) => {
+        setFormData(prev => ({ ...prev, target_date: value }))
+        setError(null)
+    }
+
+    const isToday = (dateString: string) => {
+        return dateString === getTodayDate()
+    }
+
+    const isFutureDate = (dateString: string) => {
+        if (!dateString) return false
+        return dateString > getTodayDate()
+    }
+
+    const getDaysUntil = (dateString: string) => {
+        if (!dateString) return 0
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const target = new Date(dateString + 'T00:00:00')
+        const diffTime = target.getTime() - today.getTime()
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        return diffDays
+    }
+
+    // Quick date suggestions
+    const quickDates = [
+        { label: '1 Month', value: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0] },
+        { label: '3 Months', value: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0] },
+        { label: '6 Months', value: new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0] },
+        { label: '1 Year', value: new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0] },
+    ]
+
     return (
         <Transition.Root show={isOpen} as={Fragment}>
             <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -209,31 +270,66 @@ export default function GoalModal({
                                     )}
                                 </div>
 
+                                {/* Date - Improved with custom styling */}
                                 <div>
                                     <label className="block text-sm text-[#9A9A9A] mb-1">
                                         Target Date <span className="text-[#FF5A5A]">*</span>
                                     </label>
-                                    <input
-                                        type="date"
-                                        value={formData.target_date}
-                                        onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
-                                        className={`w-full px-3 py-2 bg-[#171717] border rounded-lg text-white focus:outline-none focus:border-[#5CB85C] transition-colors ${
-                                            error && formData.target_date && new Date(formData.target_date) <= new Date()
-                                                ? 'border-[#FF5A5A]'
-                                                : 'border-[#242424]'
-                                        }`}
-                                        disabled={loading}
-                                        min={getTomorrowDate()}
-                                        required
-                                    />
-                                    <p className="text-xs text-[#9A9A9A] mt-1">
-                                        Must be at least one day after today
-                                    </p>
-                                    {formData.target_date && new Date(formData.target_date) <= new Date() && (
-                                        <p className="text-xs text-[#FF5A5A] mt-1">
-                                            Please select a date after today
-                                        </p>
+                                    
+                                    <div className="relative">
+                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9A9A9A]" />
+                                        <input
+                                            type="date"
+                                            value={formData.target_date}
+                                            onChange={(e) => handleDateChange(e.target.value)}
+                                            className={`w-full pl-10 pr-3 py-2.5 bg-[#171717] border rounded-lg text-white focus:border-[#5CB85C] focus:outline-none transition-colors [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 [&::-webkit-datetime-edit]:text-white [&::-webkit-datetime-edit-day-field]:text-white [&::-webkit-datetime-edit-month-field]:text-white [&::-webkit-datetime-edit-year-field]:text-white ${
+                                                error && formData.target_date && new Date(formData.target_date) <= new Date()
+                                                    ? 'border-[#FF5A5A]'
+                                                    : 'border-[#242424]'
+                                            }`}
+                                            disabled={loading}
+                                            min={getTomorrowDate()}
+                                            max={getMaxDate()}
+                                            required
+                                        />
+                                    </div>
+
+                                    {/* Date Display Badge */}
+                                    {formData.target_date && (
+                                        <div className="mt-2 flex items-center gap-2 flex-wrap">
+                                            <span className="text-xs px-2.5 py-1 rounded-full bg-[#5CB85C]/20 text-[#5CB85C] border border-[#5CB85C]/30">
+                                                {isToday(formData.target_date) && 'Today'}
+                                                {isFutureDate(formData.target_date) && `${getDayOfWeek(formData.target_date)}`}
+                                                {!isFutureDate(formData.target_date) && !isToday(formData.target_date) && 'Past'}
+                                            </span>
+                                            <span className="text-sm text-white">
+                                                {formatDisplayDate(formData.target_date)}
+                                            </span>
+                                            {isFutureDate(formData.target_date) && (
+                                                <span className="text-xs text-[#9A9A9A]">
+                                                    ({getDaysUntil(formData.target_date)} days from now)
+                                                </span>
+                                            )}
+                                        </div>
                                     )}
+
+                                    {/* Quick Date Suggestions */}
+                                    <div className="mt-2 flex gap-2 flex-wrap">
+                                        {quickDates.map((date) => (
+                                            <button
+                                                key={date.label}
+                                                type="button"
+                                                onClick={() => handleDateChange(date.value)}
+                                                className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                                                    formData.target_date === date.value
+                                                        ? 'bg-[#5CB85C] text-black'
+                                                        : 'bg-[#1A1A1A] text-[#9A9A9A] hover:text-white border border-[#242424] hover:border-[#5CB85C]'
+                                                }`}
+                                            >
+                                                {date.label}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
 
                                 <div>

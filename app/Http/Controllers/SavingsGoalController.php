@@ -12,10 +12,15 @@ use Inertia\Inertia;
 class SavingsGoalController extends Controller
 {
     /**
-     * Display the Savings page
+     * Display the Savings page (web route)
      */
     public function index(Request $request)
     {
+        // If it's an API request, return JSON
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return $this->apiIndex($request);
+        }
+
         $user = $request->user();
 
         $goals = SavingsGoal::where('user_id', $user->id)
@@ -46,6 +51,58 @@ class SavingsGoalController extends Controller
             ],
             'recent_transactions' => $recentTransactions,
         ]);
+    }
+
+    /**
+     * API endpoint for savings goals (returns JSON)
+     */
+    public function apiIndex(Request $request)
+    {
+        try {
+            $user = $request->user();
+            
+            if (!$user) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+
+            $goals = SavingsGoal::where('user_id', $user->id)
+                ->where('is_archived', false)
+                ->with(['transactions' => function ($query) {
+                    $query->latest()->limit(5);
+                }])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $safeBalance = $user->safe_balance ?? 0;
+            $totalSaved = $goals->where('is_archived', false)->sum('current_amount');
+            $activeGoals = $goals->where('is_archived', false)->where('is_completed', false)->count();
+            $completedGoals = $goals->where('is_archived', false)->where('is_completed', true)->count();
+
+            $recentTransactions = SavingsTransaction::where('user_id', $user->id)
+                ->with('savingsGoal')
+                ->latest()
+                ->limit(10)
+                ->get();
+
+            return response()->json([
+                'goals' => $goals,
+                'summary' => [
+                    'safe_balance' => $safeBalance,
+                    'total_saved' => $totalSaved,
+                    'active_goals' => $activeGoals,
+                    'completed_goals' => $completedGoals,
+                ],
+                'recent_transactions' => $recentTransactions,
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Savings API error: ' . $e->getMessage());
+            return response()->json([
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ], 500);
+        }
     }
 
     /**

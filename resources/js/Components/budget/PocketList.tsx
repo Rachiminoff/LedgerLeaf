@@ -30,7 +30,6 @@ export default function PocketList({
                     key={pocket.id}
                     pocket={pocket}
                     onEdit={onEdit}
-                    onArchive={onArchive}
                     onDelete={onDelete}
                     onAllocate={onAllocate}
                     onRefund={onRefund}

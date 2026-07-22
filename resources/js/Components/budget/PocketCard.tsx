@@ -1,4 +1,4 @@
-import { Pencil, Archive, Trash2, TrendingUp, X } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, X } from 'lucide-react';
 import { Icon } from '@iconify/react';
 import { useState, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
@@ -6,7 +6,6 @@ import { Dialog, Transition } from '@headlessui/react';
 interface PocketCardProps {
     pocket: any;
     onEdit: (pocket: any) => void;
-    onArchive: (id: number) => void;
     onDelete: (id: number) => void;
     onAllocate: (id: number) => void;
     onRefund?: (id: number, amount: number) => void;
@@ -16,7 +15,6 @@ interface PocketCardProps {
 export default function PocketCard({
     pocket,
     onEdit,
-    onArchive,
     onDelete,
     onAllocate,
     onRefund,
@@ -24,9 +22,21 @@ export default function PocketCard({
     const [showActions, setShowActions] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [modalAction, setModalAction] = useState<'archive' | 'delete' | null>(null);
 
-    const progress = pocket.progress || 0;
+    // ─── Calculate values from pocket data ──────────────────────
+    const allocated = Number(pocket.allocated) || 0;
+    const spent = Number(pocket.spent) || 0;
+    const balance = Number(pocket.balance) || 0;
+    
+    // Calculate remaining (allocated - spent)
+    const remaining = allocated - spent;
+    
+    // Calculate progress percentage
+    const progress = allocated > 0 ? (spent / allocated) * 100 : 0;
+    
+    // Refundable amount is the remaining balance
+    const refundableAmount = remaining;
+
     const isOverBudget = progress > 100;
     const isNearLimit = progress > 80 && progress <= 100;
 
@@ -44,39 +54,21 @@ export default function PocketCard({
         }).format(amount);
     };
 
-    const getRefundableAmount = () => {
-        return pocket.allocated - pocket.spent;
-    };
-
-    const handleAction = (action: 'archive' | 'delete') => {
-        setModalAction(action);
+    const handleDelete = () => {
         setShowConfirmModal(true);
     };
 
-    const confirmAction = async () => {
-        if (!modalAction) return;
-        
-        const refundAmount = getRefundableAmount();
-        
+    const confirmDelete = async () => {
         setIsProcessing(true);
         setShowConfirmModal(false);
         
         try {
-            if (refundAmount > 0 && onRefund) {
-                await onRefund(pocket.id, refundAmount);
-            }
-            
-            if (modalAction === 'archive') {
-                await onArchive(pocket.id);
-            } else {
-                await onDelete(pocket.id);
-            }
+            await onDelete(pocket.id);
         } catch (error) {
-            console.error(`Failed to ${modalAction} pocket:`, error);
-            alert(`Failed to ${modalAction} pocket. Please try again.`);
+            console.error('Failed to delete pocket:', error);
+            alert('Failed to delete pocket. Please try again.');
         } finally {
             setIsProcessing(false);
-            setModalAction(null);
         }
     };
 
@@ -117,16 +109,16 @@ export default function PocketCard({
 
                         <div className="text-left sm:text-right">
                             <p className="text-sm font-semibold text-white">
-                                {formatCurrency(pocket.allocated)}
+                                {formatCurrency(allocated)}
                             </p>
 
                             <p className="text-xs text-[#9A9A9A]">
-                                Spent: {formatCurrency(pocket.spent)}
+                                Spent: {formatCurrency(spent)}
                             </p>
                             
-                            {getRefundableAmount() > 0 && (
+                            {refundableAmount > 0 && (
                                 <p className="text-xs text-[#5CB85C]">
-                                    Refundable: {formatCurrency(getRefundableAmount())}
+                                    Refundable: {formatCurrency(refundableAmount)}
                                 </p>
                             )}
                         </div>
@@ -140,7 +132,7 @@ export default function PocketCard({
                             </span>
 
                             <span>
-                                {formatCurrency(pocket.remaining)} remaining
+                                {formatCurrency(remaining)} remaining
                             </span>
                         </div>
 
@@ -191,23 +183,15 @@ export default function PocketCard({
                             </button>
 
                             <button
-                                onClick={() => handleAction('archive')}
+                                onClick={handleDelete}
                                 className="p-2 rounded-lg hover:bg-[#242424] transition-colors"
                                 disabled={isProcessing}
                             >
                                 {isProcessing ? (
                                     <div className="w-4 h-4 border-2 border-[#9A9A9A] border-t-transparent rounded-full animate-spin" />
                                 ) : (
-                                    <Archive className="w-4 h-4 text-[#9A9A9A]" />
+                                    <Trash2 className="w-4 h-4 text-[#FF5A5A]" />
                                 )}
-                            </button>
-
-                            <button
-                                onClick={() => handleAction('delete')}
-                                className="p-2 rounded-lg hover:bg-[#242424] transition-colors"
-                                disabled={isProcessing}
-                            >
-                                <Trash2 className="w-4 h-4 text-[#FF5A5A]" />
                             </button>
                         </div>
                     </div>
@@ -240,25 +224,16 @@ export default function PocketCard({
                     </button>
 
                     <button
-                        onClick={() => handleAction('archive')}
+                        onClick={handleDelete}
                         className="p-2 rounded-md hover:bg-[#242424] transition-colors"
-                        title={getRefundableAmount() > 0 ? `Archive & Refund ${formatCurrency(getRefundableAmount())}` : 'Archive'}
+                        title={refundableAmount > 0 ? `Delete & Refund ${formatCurrency(refundableAmount)}` : 'Delete'}
                         disabled={isProcessing}
                     >
                         {isProcessing ? (
                             <div className="w-4 h-4 border-2 border-[#9A9A9A] border-t-transparent rounded-full animate-spin" />
                         ) : (
-                            <Archive className="w-4 h-4 text-[#9A9A9A] hover:text-white" />
+                            <Trash2 className="w-4 h-4 text-[#9A9A9A] hover:text-[#FF5A5A]" />
                         )}
-                    </button>
-
-                    <button
-                        onClick={() => handleAction('delete')}
-                        className="p-2 rounded-md hover:bg-[#242424] transition-colors"
-                        title={getRefundableAmount() > 0 ? `Delete & Refund ${formatCurrency(getRefundableAmount())}` : 'Delete'}
-                        disabled={isProcessing}
-                    >
-                        <Trash2 className="w-4 h-4 text-[#9A9A9A] hover:text-[#FF5A5A]" />
                     </button>
                 </div>
             </div>
@@ -292,7 +267,7 @@ export default function PocketCard({
                                 <div className="p-6">
                                     <div className="flex items-center justify-between mb-4">
                                         <Dialog.Title className="text-lg font-semibold text-white">
-                                            {modalAction === 'archive' ? 'Archive Pocket' : 'Delete Pocket'}
+                                            Delete Pocket
                                         </Dialog.Title>
                                         <button
                                             onClick={() => setShowConfirmModal(false)}
@@ -304,22 +279,19 @@ export default function PocketCard({
 
                                     <div className="space-y-4">
                                         <p className="text-[#9A9A9A] text-sm">
-                                            {modalAction === 'archive' 
-                                                ? `Are you sure you want to archive "${pocket.name}"?`
-                                                : `Are you sure you want to permanently delete "${pocket.name}"?`
-                                            }
+                                            Are you sure you want to permanently delete "{pocket.name}"?
                                         </p>
 
-                                        {getRefundableAmount() > 0 && (
+                                        {refundableAmount > 0 && (
                                             <div className="p-3 rounded-lg bg-[#5CB85C]/10 border border-[#5CB85C]/20">
                                                 <p className="text-sm text-[#5CB85C]">
                                                     <span className="font-medium">💰 Refund:</span> 
-                                                    {' '}{formatCurrency(getRefundableAmount())} will be returned to your safe balance.
+                                                    {' '}{formatCurrency(refundableAmount)} will be returned to your safe balance.
                                                 </p>
                                             </div>
                                         )}
 
-                                        {getRefundableAmount() <= 0 && (
+                                        {refundableAmount <= 0 && (
                                             <div className="p-3 rounded-lg bg-[#9A9A9A]/10 border border-[#9A9A9A]/20">
                                                 <p className="text-sm text-[#9A9A9A]">
                                                     No remaining balance to refund.
@@ -327,11 +299,11 @@ export default function PocketCard({
                                             </div>
                                         )}
 
-                                        {pocket.spent > 0 && (
+                                        {spent > 0 && (
                                             <div className="p-3 rounded-lg bg-[#F4B400]/10 border border-[#F4B400]/20">
                                                 <p className="text-sm text-[#F4B400]">
                                                     <span className="font-medium">📊 Spent:</span> 
-                                                    {' '}{formatCurrency(pocket.spent)} has been used from this pocket.
+                                                    {' '}{formatCurrency(spent)} has been used from this pocket.
                                                 </p>
                                             </div>
                                         )}
@@ -347,14 +319,10 @@ export default function PocketCard({
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={confirmAction}
-                                            className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
-                                                modalAction === 'archive'
-                                                    ? 'bg-[#F4B400] text-black hover:bg-[#E5A800]'
-                                                    : 'bg-[#FF5A5A] text-white hover:bg-[#E04444]'
-                                            }`}
+                                            onClick={confirmDelete}
+                                            className="flex-1 px-4 py-2 bg-[#FF5A5A] text-white rounded-lg hover:bg-[#E04444] transition-colors"
                                         >
-                                            {modalAction === 'archive' ? 'Archive Pocket' : 'Delete Pocket'}
+                                            Delete Pocket
                                         </button>
                                     </div>
                                 </div>

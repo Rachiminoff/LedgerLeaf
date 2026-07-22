@@ -28,7 +28,7 @@ import EmptyState from '@/Components/budget/EmptyState';
 import PocketModal from '@/Components/budget/PocketModal';
 import AllocateFundsModal from '@/Components/budget/AllocateFundsModal';
 import TransferFundsModal from '@/Components/budget/TransferFundsModal';
-import ConfirmModal from '@/Components/ui/ConfirmModal';
+// REMOVED: import ConfirmModal from '@/Components/ui/ConfirmModal';
 import { useBudget } from '@/hooks/useBudget';
 import { usePockets } from '@/hooks/usePockets';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -46,18 +46,6 @@ interface PageProps {
         };
     };
     [key: string]: unknown;
-}
-
-/**
- * Confirmation modal configuration.
- */
-interface ConfirmModalConfig {
-    isOpen: boolean;
-    title: string;
-    message: string;
-    action: () => void;
-    type: 'danger' | 'warning' | 'info';
-    confirmText: string;
 }
 
 /**
@@ -96,19 +84,6 @@ export default function BudgetIndex(): JSX.Element {
     
     /** The user's current safe balance. */
     const [safeBalance, setSafeBalance] = useState<number>(0);
-
-    /**
-     * Confirmation modal state for destructive actions.
-     * Used for archive and delete confirmations.
-     */
-    const [confirmModal, setConfirmModal] = useState<ConfirmModalConfig>({
-        isOpen: false,
-        title: '',
-        message: '',
-        action: () => {},
-        type: 'danger',
-        confirmText: 'Confirm',
-    });
 
     /** Determines if the current viewport is mobile size. */
     const isMobile = useMediaQuery('(max-width: 768px)');
@@ -216,63 +191,39 @@ export default function BudgetIndex(): JSX.Element {
     };
 
     /**
-     * Archives a pocket with confirmation.
-     * Refunds any remaining balance to safe balance.
+     * Archives a pocket - Direct action, no confirmation here.
+     * Confirmation is handled in PocketCard component.
      * 
      * @param {number} id - The ID of the pocket to archive.
      * @returns {Promise<void>}
      */
     const handleArchivePocket = async (id: number): Promise<void> => {
-        const pocket = (pockets as Array<Record<string, any>>).find((p: Record<string, any>) => p.id === id);
-        const refundAmount = (pocket?.allocated ?? 0) - (pocket?.spent ?? 0);
-        
-        setConfirmModal({
-            isOpen: true,
-            title: 'Archive Pocket',
-            message: `Are you sure you want to archive "${pocket?.name}"?${refundAmount > 0 ? `\n\n💰 ₱${refundAmount.toFixed(2)} will be refunded to your safe balance.` : ''}`,
-            type: 'warning',
-            confirmText: 'Archive',
-            action: async (): Promise<void> => {
-                try {
-                    await archivePocket(id);
-                    toastSuccess('Pocket archived successfully!');
-                    fetchPockets(filters);
-                    fetchBudgetData();
-                } catch (err: any) {
-                    toastError(err.message || 'Failed to archive pocket');
-                }
-            },
-        });
+        try {
+            await archivePocket(id);
+            toastSuccess('Pocket archived successfully!');
+            fetchPockets(filters);
+            fetchBudgetData();
+        } catch (err: any) {
+            toastError(err.message || 'Failed to archive pocket');
+        }
     };
 
     /**
-     * Permanently deletes a pocket with confirmation.
-     * Refunds any remaining balance to safe balance.
+     * Permanently deletes a pocket - Direct action, no confirmation here.
+     * Confirmation is handled in PocketCard component.
      * 
      * @param {number} id - The ID of the pocket to delete.
      * @returns {Promise<void>}
      */
     const handleDeletePocket = async (id: number): Promise<void> => {
-        const pocket = (pockets as Array<Record<string, any>>).find((p: Record<string, any>) => p.id === id);
-        const refundAmount = (pocket?.allocated ?? 0) - (pocket?.spent ?? 0);
-        
-        setConfirmModal({
-            isOpen: true,
-            title: 'Delete Pocket',
-            message: `Are you sure you want to permanently delete "${pocket?.name}"?${refundAmount > 0 ? `\n\n💰 ₱${refundAmount.toFixed(2)} will be refunded to your safe balance.` : ''}`,
-            type: 'danger',
-            confirmText: 'Delete',
-            action: async (): Promise<void> => {
-                try {
-                    await deletePocket(id);
-                    toastSuccess('Pocket deleted successfully!');
-                    fetchPockets(filters);
-                    fetchBudgetData();
-                } catch (err: any) {
-                    toastError(err.message || 'Failed to delete pocket');
-                }
-            },
-        });
+        try {
+            await deletePocket(id);
+            toastSuccess('Pocket deleted successfully!');
+            fetchPockets(filters);
+            fetchBudgetData();
+        } catch (err: any) {
+            toastError(err.message || 'Failed to delete pocket');
+        }
     };
 
     /**
@@ -338,6 +289,7 @@ export default function BudgetIndex(): JSX.Element {
 
     /**
      * Handles user logout.
+     * Uses a simple confirmation for logout.
      * 
      * @returns {void}
      */
@@ -521,16 +473,9 @@ export default function BudgetIndex(): JSX.Element {
                     pockets={pockets}
                 />
 
-                {/* Confirmation Modal for Destructive Actions */}
-                <ConfirmModal
-                    isOpen={confirmModal.isOpen}
-                    onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-                    onConfirm={confirmModal.action}
-                    title={confirmModal.title}
-                    message={confirmModal.message}
-                    type={confirmModal.type}
-                    confirmText={confirmModal.confirmText}
-                />
+                {/* ─── Removed ConfirmModal ─── */}
+                {/* Confirmation for archive/delete is now handled in PocketCard component */}
+                {/* Logout uses browser confirm() */}
             </div>
         </>
     );
