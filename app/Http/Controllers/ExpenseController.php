@@ -119,8 +119,9 @@ class ExpenseController extends Controller
     }
 
     /**
-     * Store a new expense - SYNCED WITH POCKET
-     * Also logs the creation in audit log
+     * Store a new expense - SYNCED WITH POCKET AND TOTAL BALANCE
+     * TOTAL BALANCE = Safe Balance + Allocated to Pockets
+     * When spending from a pocket, total_balance decreases
      */
     public function store(Request $request)
     {
@@ -178,6 +179,11 @@ class ExpenseController extends Controller
                         $pocket->save();
                     }
                 }
+
+                // Subtract from total_balance (total money decreases)
+                // total_balance = safe_balance + allocated_to_pockets
+                $user->total_balance -= $validated['amount'];
+                $user->save();
             });
 
             return response()->json([
@@ -185,6 +191,7 @@ class ExpenseController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
+            \Log::error('Expense store error: ' . $e->getMessage());
             return response()->json([
                 'error' => $e->getMessage(),
                 'line' => $e->getLine()
@@ -193,8 +200,7 @@ class ExpenseController extends Controller
     }
 
     /**
-     * Update an expense - SYNCED WITH POCKET
-     * Also logs the update in audit log
+     * Update an expense - SYNCED WITH POCKET AND TOTAL BALANCE
      */
     public function update(Request $request, Expense $expense)
     {
@@ -217,8 +223,9 @@ class ExpenseController extends Controller
             $oldAmount = $expense->amount;
             $newPocketId = $validated['pocket_id'] ?? $expense->pocket_id;
             $newAmount = $validated['amount'] ?? $expense->amount;
+            $user = $request->user();
 
-            DB::transaction(function () use ($expense, $validated, $oldPocketId, $oldAmount, $newPocketId, $newAmount) {
+            DB::transaction(function () use ($expense, $validated, $oldPocketId, $oldAmount, $newPocketId, $newAmount, $user) {
                 // If pocket changed
                 if ($oldPocketId != $newPocketId) {
                     // Refund old pocket
@@ -263,6 +270,11 @@ class ExpenseController extends Controller
                     }
                 }
 
+                // Update total_balance
+                $balanceDiff = $newAmount - $oldAmount;
+                $user->total_balance -= $balanceDiff;
+                $user->save();
+
                 $expense->update($validated);
             });
 
@@ -271,6 +283,7 @@ class ExpenseController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Expense update error: ' . $e->getMessage());
             return response()->json([
                 'error' => $e->getMessage(),
                 'line' => $e->getLine()
@@ -279,8 +292,7 @@ class ExpenseController extends Controller
     }
 
     /**
-     * Delete an expense - SYNCED WITH POCKET
-     * Also logs the deletion in audit log
+     * Delete an expense - SYNCED WITH POCKET AND TOTAL BALANCE
      */
     public function destroy(Expense $expense)
     {
@@ -289,7 +301,9 @@ class ExpenseController extends Controller
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
-            DB::transaction(function () use ($expense) {
+            $user = auth()->user();
+
+            DB::transaction(function () use ($expense, $user) {
                 // Refund the amount back to the pocket
                 if ($expense->pocket_id) {
                     $pocket = Pocket::find($expense->pocket_id);
@@ -299,6 +313,10 @@ class ExpenseController extends Controller
                         $pocket->save();
                     }
                 }
+
+                // Refund to total_balance
+                $user->total_balance += $expense->amount;
+                $user->save();
 
                 $expense->delete();
             });
@@ -309,6 +327,7 @@ class ExpenseController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Expense delete error: ' . $e->getMessage());
             return response()->json([
                 'error' => $e->getMessage(),
                 'line' => $e->getLine()
@@ -317,8 +336,7 @@ class ExpenseController extends Controller
     }
 
     /**
-     * Archive an expense - SYNCED WITH POCKET
-     * Also logs the archive action in audit log
+     * Archive an expense - SYNCED WITH POCKET AND TOTAL BALANCE
      */
     public function archive(Expense $expense)
     {
@@ -327,7 +345,9 @@ class ExpenseController extends Controller
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
-            DB::transaction(function () use ($expense) {
+            $user = auth()->user();
+
+            DB::transaction(function () use ($expense, $user) {
                 // Refund the amount back to the pocket
                 if ($expense->pocket_id) {
                     $pocket = Pocket::find($expense->pocket_id);
@@ -338,6 +358,10 @@ class ExpenseController extends Controller
                     }
                 }
 
+                // Refund to total_balance
+                $user->total_balance += $expense->amount;
+                $user->save();
+
                 $expense->update(['is_archived' => true]);
             });
 
@@ -347,6 +371,7 @@ class ExpenseController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Expense archive error: ' . $e->getMessage());
             return response()->json([
                 'error' => $e->getMessage(),
                 'line' => $e->getLine()
@@ -355,8 +380,7 @@ class ExpenseController extends Controller
     }
 
     /**
-     * Restore an archived expense - SYNCED WITH POCKET
-     * Also logs the restore action in audit log
+     * Restore an archived expense - SYNCED WITH POCKET AND TOTAL BALANCE
      */
     public function restore(Expense $expense)
     {
@@ -365,7 +389,9 @@ class ExpenseController extends Controller
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
-            DB::transaction(function () use ($expense) {
+            $user = auth()->user();
+
+            DB::transaction(function () use ($expense, $user) {
                 // Deduct the amount back from the pocket
                 if ($expense->pocket_id) {
                     $pocket = Pocket::find($expense->pocket_id);
@@ -380,6 +406,10 @@ class ExpenseController extends Controller
                     }
                 }
 
+                // Deduct from total_balance
+                $user->total_balance -= $expense->amount;
+                $user->save();
+
                 $expense->update(['is_archived' => false]);
             });
 
@@ -388,6 +418,7 @@ class ExpenseController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Expense restore error: ' . $e->getMessage());
             return response()->json([
                 'error' => $e->getMessage(),
                 'line' => $e->getLine()

@@ -135,6 +135,11 @@ class AnalyticsController extends Controller
             ->where('is_archived', false)
             ->get();
 
+        $pockets = Pocket::where('user_id', $user->id)
+            ->where('is_archived', false)
+            ->orderBy('name')
+            ->get();
+
         $totalIncome = Transaction::where('user_id', $user->id)
             ->where('type', 'income')
             ->whereBetween('date', [$start, $end])
@@ -143,17 +148,19 @@ class AnalyticsController extends Controller
         $totalExpenses = $expenses->sum('amount');
         $totalSavings = $savings->sum('current_amount');
         $safeBalance = $user->safe_balance ?? 0;
+        $netBalance = $totalIncome - $totalExpenses;
 
         return [
             'user' => $user,
             'expenses' => $expenses,
             'savings' => $savings,
+            'pockets' => $pockets,
             'summary' => [
                 'total_income' => $totalIncome,
                 'total_expenses' => $totalExpenses,
                 'total_savings' => $totalSavings,
                 'safe_balance' => $safeBalance,
-                'net_balance' => $totalIncome - $totalExpenses,
+                'net_balance' => $netBalance,
             ],
             'period' => [
                 'start' => Carbon::parse($start)->format('M d, Y'),
@@ -161,6 +168,17 @@ class AnalyticsController extends Controller
             ],
             'generated_at' => now()->format('F j, Y g:i A'),
         ];
+    }
+
+    /**
+     * Format currency for export (PHP)
+     *
+     * @param float $amount
+     * @return string
+     */
+    private function formatCurrency(float $amount): string
+    {
+        return '₱' . number_format($amount, 2);
     }
 
     /**
@@ -178,17 +196,14 @@ class AnalyticsController extends Controller
         }
 
         try {
-            // Get pockets data
             $pockets = Pocket::where('user_id', $data['user']->id)
                 ->where('is_archived', false)
                 ->orderBy('name')
                 ->get();
 
-            // Calculate period spent for each pocket
             $startDate = $data['period']['start'] ?? now()->startOfMonth()->format('M d, Y');
             $endDate = $data['period']['end'] ?? now()->endOfMonth()->format('M d, Y');
             
-            // Convert to actual dates for querying
             $start = Carbon::parse($startDate)->toDateString();
             $end = Carbon::parse($endDate)->toDateString();
 
@@ -205,7 +220,6 @@ class AnalyticsController extends Controller
                     : 0;
             }
 
-            // Get monthly trend
             $monthlyTrend = [];
             $expenses = $data['expenses'] ?? collect();
             if ($expenses->count() > 0) {
@@ -247,6 +261,7 @@ class AnalyticsController extends Controller
             ], 500);
         }
     }
+
     /**
      * Export as Excel using Spatie Simple Excel.
      *
@@ -267,50 +282,84 @@ class AnalyticsController extends Controller
 
             $writer = \Spatie\SimpleExcel\SimpleExcelWriter::create($tempFile);
 
-            // Add summary section
-            $writer->addRow(['LedgerLeaf Analytics Report']);
+            // ===== HEADER SECTION =====
+            $writer->addRow(['LEDGERLEAF FINANCIAL REPORT']);
             $writer->addRow([]);
-            $writer->addRow(['Period:', $data['period']['start'] . ' - ' . $data['period']['end']]);
             $writer->addRow(['Generated:', $data['generated_at']]);
+            $writer->addRow(['Period:', $data['period']['start'] . ' - ' . $data['period']['end']]);
+            $writer->addRow(['User:', $data['user']->name . ' (' . $data['user']->email . ')']);
             $writer->addRow([]);
-            $writer->addRow(['FINANCIAL SUMMARY']);
-            $writer->addRow(['Metric', 'Amount (₱)']);
-            $writer->addRow(['Total Income', number_format($data['summary']['total_income'], 2)]);
-            $writer->addRow(['Total Expenses', number_format($data['summary']['total_expenses'], 2)]);
-            $writer->addRow(['Total Savings', number_format($data['summary']['total_savings'], 2)]);
-            $writer->addRow(['Safe Balance', number_format($data['summary']['safe_balance'], 2)]);
-            $writer->addRow(['Net Balance', number_format($data['summary']['net_balance'], 2)]);
 
-            // Add expenses
+            // ===== FINANCIAL SUMMARY =====
+            $writer->addRow(['FINANCIAL SUMMARY']);
+            $writer->addRow(['Metric', 'Amount']);
+            $writer->addRow(['Total Income', $this->formatCurrency($data['summary']['total_income'])]);
+            $writer->addRow(['Total Expenses', $this->formatCurrency($data['summary']['total_expenses'])]);
+            $writer->addRow(['Net Balance', $this->formatCurrency($data['summary']['net_balance'])]);
+            $writer->addRow(['Total Savings', $this->formatCurrency($data['summary']['total_savings'])]);
+            $writer->addRow(['Safe Balance', $this->formatCurrency($data['summary']['safe_balance'])]);
             $writer->addRow([]);
-            $writer->addRow(['EXPENSES']);
-            $writer->addRow(['Date', 'Description', 'Pocket', 'Amount (₱)']);
+
+            // ===== POCKETS OVERVIEW =====
+            if ($data['pockets']->isNotEmpty()) {
+                $writer->addRow(['POCKETS OVERVIEW']);
+                $writer->addRow(['Pocket Name', 'Allocated', 'Spent', 'Remaining', 'Utilization']);
+                
+                foreach ($data['pockets'] as $pocket) {
+                    $start = Carbon::parse($data['period']['start'])->toDateString();
+                    $end = Carbon::parse($data['period']['end'])->toDateString();
+                    
+                    $spent = Expense::where('user_id', $data['user']->id)
+                        ->where('pocket_id', $pocket->id)
+                        ->where('is_archived', false)
+                        ->whereBetween('expense_date', [$start, $end])
+                        ->sum('amount');
+                    
+                    $allocated = $pocket->allocated ?? 0;
+                    $remaining = $allocated - $spent;
+                    $utilization = $allocated > 0 ? round(($spent / $allocated) * 100, 1) : 0;
+                    
+                    $writer->addRow([
+                        $pocket->name,
+                        $this->formatCurrency($allocated),
+                        $this->formatCurrency($spent),
+                        $this->formatCurrency($remaining),
+                        $utilization . '%',
+                    ]);
+                }
+                $writer->addRow([]);
+            }
+
+            // ===== EXPENSES =====
+            $writer->addRow(['EXPENSE DETAILS']);
+            $writer->addRow(['Date', 'Description', 'Pocket', 'Payment Method', 'Amount']);
 
             if ($data['expenses']->isNotEmpty()) {
                 foreach ($data['expenses'] as $expense) {
                     $writer->addRow([
-                        $expense->expense_date,
+                        Carbon::parse($expense->expense_date)->format('M d, Y'),
                         $expense->description,
                         $expense->pocket?->name ?? 'Uncategorized',
-                        number_format($expense->amount, 2),
+                        $expense->payment_method ?? 'N/A',
+                        $this->formatCurrency($expense->amount),
                     ]);
                 }
 
-                // Add total row
                 $writer->addRow([
                     'TOTAL',
                     '',
                     '',
-                    number_format($data['summary']['total_expenses'], 2),
+                    '',
+                    $this->formatCurrency($data['summary']['total_expenses']),
                 ]);
             } else {
                 $writer->addRow(['No expenses recorded in this period.']);
             }
-
-            // Add savings
             $writer->addRow([]);
+
+            // ===== SAVINGS GOALS =====
             $writer->addRow(['SAVINGS GOALS']);
-            $writer->addRow(['Name', 'Target (₱)', 'Current (₱)', 'Progress', 'Status']);
+            $writer->addRow(['Goal Name', 'Target', 'Current', 'Progress', 'Status']);
 
             if ($data['savings']->isNotEmpty()) {
                 foreach ($data['savings'] as $goal) {
@@ -320,8 +369,8 @@ class AnalyticsController extends Controller
 
                     $writer->addRow([
                         $goal->name,
-                        number_format($goal->target_amount, 2),
-                        number_format($goal->current_amount, 2),
+                        $this->formatCurrency($goal->target_amount),
+                        $this->formatCurrency($goal->current_amount),
                         $progress . '%',
                         $goal->is_completed ? 'Completed' : 'In Progress',
                     ]);
@@ -329,6 +378,12 @@ class AnalyticsController extends Controller
             } else {
                 $writer->addRow(['No savings goals created yet.']);
             }
+            $writer->addRow([]);
+
+            // ===== FOOTER =====
+            $writer->addRow(['']);
+            $writer->addRow(['Generated by LedgerLeaf Financial Management System']);
+            $writer->addRow(['Confidential - For authorized use only']);
 
             $writer->close();
 
@@ -358,33 +413,81 @@ class AnalyticsController extends Controller
         $callback = function () use ($data) {
             $file = fopen('php://output', 'w');
 
-            fputcsv($file, ['LedgerLeaf Analytics Report']);
-            fputcsv($file, ['Generated: ' . $data['generated_at']]);
-            fputcsv($file, ['Period: ' . $data['period']['start'] . ' - ' . $data['period']['end']]);
+            // ===== HEADER =====
+            fputcsv($file, ['LEDGERLEAF FINANCIAL REPORT']);
+            fputcsv($file, ['Generated:', $data['generated_at']]);
+            fputcsv($file, ['Period:', $data['period']['start'] . ' - ' . $data['period']['end']]);
+            fputcsv($file, ['User:', $data['user']->name . ' (' . $data['user']->email . ')']);
             fputcsv($file, []);
-            fputcsv($file, ['Financial Summary']);
+
+            // ===== FINANCIAL SUMMARY =====
+            fputcsv($file, ['FINANCIAL SUMMARY']);
             fputcsv($file, ['Metric', 'Amount']);
-            fputcsv($file, ['Total Income', number_format($data['summary']['total_income'], 2)]);
-            fputcsv($file, ['Total Expenses', number_format($data['summary']['total_expenses'], 2)]);
-            fputcsv($file, ['Total Savings', number_format($data['summary']['total_savings'], 2)]);
-            fputcsv($file, ['Safe Balance', number_format($data['summary']['safe_balance'], 2)]);
-            fputcsv($file, ['Net Balance', number_format($data['summary']['net_balance'], 2)]);
+            fputcsv($file, ['Total Income', $this->formatCurrency($data['summary']['total_income'])]);
+            fputcsv($file, ['Total Expenses', $this->formatCurrency($data['summary']['total_expenses'])]);
+            fputcsv($file, ['Net Balance', $this->formatCurrency($data['summary']['net_balance'])]);
+            fputcsv($file, ['Total Savings', $this->formatCurrency($data['summary']['total_savings'])]);
+            fputcsv($file, ['Safe Balance', $this->formatCurrency($data['summary']['safe_balance'])]);
             fputcsv($file, []);
-            fputcsv($file, ['Expenses']);
-            fputcsv($file, ['Date', 'Description', 'Pocket', 'Amount']);
+
+            // ===== POCKETS OVERVIEW =====
+            if ($data['pockets']->isNotEmpty()) {
+                fputcsv($file, ['POCKETS OVERVIEW']);
+                fputcsv($file, ['Pocket Name', 'Allocated', 'Spent', 'Remaining', 'Utilization']);
+                
+                foreach ($data['pockets'] as $pocket) {
+                    $start = Carbon::parse($data['period']['start'])->toDateString();
+                    $end = Carbon::parse($data['period']['end'])->toDateString();
+                    
+                    $spent = Expense::where('user_id', $data['user']->id)
+                        ->where('pocket_id', $pocket->id)
+                        ->where('is_archived', false)
+                        ->whereBetween('expense_date', [$start, $end])
+                        ->sum('amount');
+                    
+                    $allocated = $pocket->allocated ?? 0;
+                    $remaining = $allocated - $spent;
+                    $utilization = $allocated > 0 ? round(($spent / $allocated) * 100, 1) : 0;
+                    
+                    fputcsv($file, [
+                        $pocket->name,
+                        $this->formatCurrency($allocated),
+                        $this->formatCurrency($spent),
+                        $this->formatCurrency($remaining),
+                        $utilization . '%',
+                    ]);
+                }
+                fputcsv($file, []);
+            }
+
+            // ===== EXPENSES =====
+            fputcsv($file, ['EXPENSE DETAILS']);
+            fputcsv($file, ['Date', 'Description', 'Pocket', 'Payment Method', 'Amount']);
 
             foreach ($data['expenses'] as $expense) {
                 fputcsv($file, [
-                    $expense->expense_date,
+                    Carbon::parse($expense->expense_date)->format('M d, Y'),
                     $expense->description,
                     $expense->pocket?->name ?? 'Uncategorized',
-                    number_format($expense->amount, 2),
+                    $expense->payment_method ?? 'N/A',
+                    $this->formatCurrency($expense->amount),
                 ]);
             }
 
+            if ($data['expenses']->isNotEmpty()) {
+                fputcsv($file, [
+                    'TOTAL',
+                    '',
+                    '',
+                    '',
+                    $this->formatCurrency($data['summary']['total_expenses']),
+                ]);
+            }
             fputcsv($file, []);
-            fputcsv($file, ['Savings Goals']);
-            fputcsv($file, ['Name', 'Target', 'Current', 'Progress']);
+
+            // ===== SAVINGS GOALS =====
+            fputcsv($file, ['SAVINGS GOALS']);
+            fputcsv($file, ['Goal Name', 'Target', 'Current', 'Progress', 'Status']);
 
             foreach ($data['savings'] as $goal) {
                 $progress = $goal->target_amount > 0
@@ -393,11 +496,18 @@ class AnalyticsController extends Controller
 
                 fputcsv($file, [
                     $goal->name,
-                    number_format($goal->target_amount, 2),
-                    number_format($goal->current_amount, 2),
+                    $this->formatCurrency($goal->target_amount),
+                    $this->formatCurrency($goal->current_amount),
                     $progress . '%',
+                    $goal->is_completed ? 'Completed' : 'In Progress',
                 ]);
             }
+            fputcsv($file, []);
+
+            // ===== FOOTER =====
+            fputcsv($file, ['']);
+            fputcsv($file, ['Generated by LedgerLeaf Financial Management System']);
+            fputcsv($file, ['Confidential - For authorized use only']);
 
             fclose($file);
         };
@@ -408,8 +518,6 @@ class AnalyticsController extends Controller
     /**
      * Get date range based on period.
      * 
-     * CHANGED: Made public for use by ReportController
-     *
      * @param string $period
      * @param string|null $startDate
      * @param string|null $endDate
@@ -456,8 +564,6 @@ class AnalyticsController extends Controller
     /**
      * Get financial overview (income, expenses, savings, remaining).
      * 
-     * CHANGED: Made public for use by ReportController
-     *
      * @param mixed $user
      * @param array $dates
      * @return array
@@ -511,8 +617,6 @@ class AnalyticsController extends Controller
     /**
      * Get daily spending trend.
      * 
-     * CHANGED: Made public for use by ReportController
-     *
      * @param mixed $user
      * @param array $dates
      * @return array
@@ -552,8 +656,6 @@ class AnalyticsController extends Controller
     /**
      * Get monthly comparison data.
      * 
-     * CHANGED: Made public for use by ReportController
-     *
      * @param mixed $user
      * @param array $dates
      * @return array
@@ -601,8 +703,6 @@ class AnalyticsController extends Controller
     /**
      * Get spending breakdown by pocket.
      * 
-     * CHANGED: Made public for use by ReportController
-     *
      * @param mixed $user
      * @param array $dates
      * @return array
@@ -653,8 +753,6 @@ class AnalyticsController extends Controller
     /**
      * Get savings performance data.
      * 
-     * CHANGED: Made public for use by ReportController
-     *
      * @param mixed $user
      * @return array
      */
@@ -688,8 +786,6 @@ class AnalyticsController extends Controller
     /**
      * Generate financial insights.
      * 
-     * CHANGED: Made public for use by ReportController
-     *
      * @param mixed $user
      * @param array $dates
      * @return array
@@ -710,7 +806,7 @@ class AnalyticsController extends Controller
                 'id' => 'total_spent',
                 'type' => 'neutral',
                 'title' => 'Total Spending',
-                'description' => 'You spent ₱' . number_format($totalExpenses, 2) . ' in this period.',
+                'description' => 'You spent ' . $this->formatCurrency($totalExpenses) . ' in this period.',
             ];
         }
 
@@ -744,7 +840,7 @@ class AnalyticsController extends Controller
                 'id' => 'total_savings',
                 'type' => 'positive',
                 'title' => 'Savings Progress',
-                'description' => 'You have saved ₱' . number_format($savings, 2) . ' across your goals.',
+                'description' => 'You have saved ' . $this->formatCurrency($savings) . ' across your goals.',
             ];
         }
 
@@ -789,8 +885,6 @@ class AnalyticsController extends Controller
     /**
      * Get quick statistics.
      * 
-     * CHANGED: Made public for use by ReportController
-     *
      * @param mixed $user
      * @param array $dates
      * @return array

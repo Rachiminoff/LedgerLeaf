@@ -35,11 +35,13 @@ export default function ExpenseModal({
     const [isInitialized, setIsInitialized] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (!isOpen) {
             setIsInitialized(false);
             setError(null);
+            setIsSubmitting(false);
             return;
         }
 
@@ -107,38 +109,43 @@ export default function ExpenseModal({
         setFormData(prev => ({ ...prev, amount: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        setIsSubmitting(true);
         
         const amount = parseFloat(formData.amount);
         
         if (!amount || amount <= 0) {
             setError('Please enter a valid amount greater than 0');
+            setIsSubmitting(false);
             return;
         }
 
         if (!formData.description.trim()) {
             setError('Please enter a description');
+            setIsSubmitting(false);
             return;
         }
 
         if (!formData.pocket_id) {
             setError('Please select a pocket');
+            setIsSubmitting(false);
             return;
         }
 
         const available = getAvailableBalance();
-        const maxAllowed = getMaxAllowedAmount();
 
         if (selectedPocket) {
             if (mode === 'create') {
                 if (amount > available) {
                     setError(`Amount exceeds available balance. Available: ₱${available.toFixed(2)}`);
+                    setIsSubmitting(false);
                     return;
                 }
                 if (available <= 0) {
                     setError(`This pocket has insufficient balance. Available: ₱${available.toFixed(2)}`);
+                    setIsSubmitting(false);
                     return;
                 }
             }
@@ -153,24 +160,48 @@ export default function ExpenseModal({
                         `Cannot increase expense by ₱${increaseAmount.toFixed(2)}. ` +
                         `Only ₱${currentAvailable.toFixed(2)} available in this pocket.`
                     );
+                    setIsSubmitting(false);
                     return;
                 }
             }
         }
 
-        if (mode === 'edit' && expense) {
-            onSave({
-                id: expense.id,
-                ...formData,
-                amount: amount,
-                pocket_id: formData.pocket_id ? parseInt(formData.pocket_id) : null,
+        try {
+            let saveData;
+            if (mode === 'edit' && expense) {
+                saveData = {
+                    id: expense.id,
+                    ...formData,
+                    amount: amount,
+                    pocket_id: formData.pocket_id ? parseInt(formData.pocket_id) : null,
+                };
+            } else {
+                saveData = {
+                    ...formData,
+                    amount: amount,
+                    pocket_id: formData.pocket_id ? parseInt(formData.pocket_id) : null,
+                };
+            }
+
+            await onSave(saveData);
+            
+            setFormData({
+                description: '',
+                amount: '',
+                pocket_id: '',
+                expense_date: new Date().toISOString().split('T')[0],
+                payment_method: '',
+                notes: '',
             });
-        } else {
-            onSave({
-                ...formData,
-                amount: amount,
-                pocket_id: formData.pocket_id ? parseInt(formData.pocket_id) : null,
-            });
+            setSelectedPocket(null);
+            setError(null);
+            setIsSubmitting(false);
+            
+            onClose();
+            
+        } catch (err) {
+            setError('Failed to save expense. Please try again.');
+            setIsSubmitting(false);
         }
     };
 
@@ -209,7 +240,6 @@ export default function ExpenseModal({
         return !wouldExceedBalance();
     };
 
-    // Payment method options with icons
     const paymentMethods = [
         { value: 'Cash', icon: 'mdi:cash' },
         { value: 'Credit Card', icon: 'mdi:credit-card' },
@@ -220,7 +250,6 @@ export default function ExpenseModal({
         { value: 'PayPal', icon: 'mdi:paypal' },
     ];
 
-    // Date helper functions
     const getTodayDate = () => {
         return new Date().toISOString().split('T')[0];
     };
@@ -274,7 +303,6 @@ export default function ExpenseModal({
         return dateString > getTodayDate();
     };
 
-    // Quick date buttons
     const quickDates = [
         { label: 'Today', value: getTodayDate() },
         { label: 'Yesterday', value: new Date(Date.now() - 86400000).toISOString().split('T')[0] },
@@ -355,7 +383,6 @@ export default function ExpenseModal({
                                                             backgroundColor: isOverBudget ? '#FF5A5A20' : 'transparent'
                                                         }}
                                                     >
-                                                        {pocket.icon && <Icon icon={pocket.icon} className="inline w-4 h-4 mr-1" />}
                                                         {pocket.name} (Available: {formatCurrency(available)})
                                                         {isOverBudget && ' Over budget'}
                                                     </option>
@@ -375,7 +402,6 @@ export default function ExpenseModal({
                                                 <div className="flex items-center justify-between">
                                                     <div>
                                                         <span className="text-sm font-medium text-white">
-                                                            {selectedPocket.icon && <Icon icon={selectedPocket.icon} className="inline w-4 h-4 mr-1" />}
                                                             {selectedPocket.name}
                                                         </span>
                                                         <div className="text-xs text-[#9A9A9A]">
@@ -475,13 +501,12 @@ export default function ExpenseModal({
                                         )}
                                     </div>
 
-                                    {/* Date - Improved with custom styling */}
+                                    {/* Date */}
                                     <div>
                                         <label className="block text-sm text-[#9A9A9A] mb-1">
                                             Date <span className="text-[#FF5A5A]">*</span>
                                         </label>
                                         
-                                        {/* Date Input Container */}
                                         <div className="relative">
                                             <div className="relative">
                                                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9A9A9A]" />
@@ -496,7 +521,6 @@ export default function ExpenseModal({
                                                 />
                                             </div>
                                             
-                                            {/* Date Display Badge */}
                                             {formData.expense_date && (
                                                 <div className="mt-2 flex items-center gap-2 flex-wrap">
                                                     <span 
@@ -519,7 +543,6 @@ export default function ExpenseModal({
                                             )}
                                         </div>
 
-                                        {/* Quick Date Buttons */}
                                         <div className="mt-2 flex gap-2 flex-wrap">
                                             {quickDates.map((date) => (
                                                 <button
@@ -538,7 +561,7 @@ export default function ExpenseModal({
                                         </div>
                                     </div>
 
-                                    {/* Payment Method with Icons */}
+                                    {/* Payment Method */}
                                     <div>
                                         <label className="block text-sm text-[#9A9A9A] mb-1">Payment Method</label>
                                         <select
@@ -578,14 +601,14 @@ export default function ExpenseModal({
                                         </button>
                                         <button
                                             type="submit"
-                                            disabled={!isAmountValid() || !formData.pocket_id || !formData.description.trim()}
+                                            disabled={!isAmountValid() || !formData.pocket_id || !formData.description.trim() || isSubmitting}
                                             className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
-                                                !isAmountValid() || !formData.pocket_id || !formData.description.trim()
+                                                !isAmountValid() || !formData.pocket_id || !formData.description.trim() || isSubmitting
                                                     ? 'bg-[#242424] text-[#9A9A9A] cursor-not-allowed'
                                                     : 'bg-[#5CB85C] text-white hover:bg-[#4CAF50]'
                                             }`}
                                         >
-                                            {mode === 'create' ? 'Add Expense' : 'Update Expense'}
+                                            {isSubmitting ? 'Saving...' : (mode === 'create' ? 'Add Expense' : 'Update Expense')}
                                         </button>
                                     </div>
                                 </form>

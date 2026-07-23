@@ -13,7 +13,10 @@ export default function BudgetHealthWidget({ health }: BudgetHealthWidgetProps) 
         return { label: 'Critical', color: '#FF5A5A', icon: AlertCircle };
     };
 
-    const healthInfo = getHealthLabel(health);
+    // Round the health value
+    const roundedHealth = Math.round(health);
+    const healthInfo = getHealthLabel(roundedHealth);
+    const clampedHealth = Math.min(Math.max(roundedHealth, 0), 100);
 
     return (
         <div className="bg-[#111111] border border-[#242424] rounded-xl p-6">
@@ -24,7 +27,7 @@ export default function BudgetHealthWidget({ health }: BudgetHealthWidgetProps) 
 
             <div className="relative">
                 <div className="text-center">
-                    <p className="text-4xl font-bold text-white font-mono">{health}%</p>
+                    <p className="text-4xl font-bold text-white font-mono">{clampedHealth}%</p>
                     <p 
                         className="text-sm font-medium mt-1"
                         style={{ color: healthInfo.color }}
@@ -38,7 +41,7 @@ export default function BudgetHealthWidget({ health }: BudgetHealthWidgetProps) 
                         <div
                             className="h-full rounded-full transition-all duration-1000"
                             style={{
-                                width: `${health}%`,
+                                width: `${clampedHealth}%`,
                                 backgroundColor: healthInfo.color,
                             }}
                         />

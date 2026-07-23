@@ -12,254 +12,293 @@
         }
         
         body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-family: 'Inter', 'Helvetica', 'Arial', sans-serif;
             font-size: 12px;
             line-height: 1.6;
-            color: #333;
-            padding: 20px;
-            background: #fff;
+            color: #e5e7eb;
+            padding: 30px 35px;
+            background: #000000;
         }
         
+        /* ===== HEADER ===== */
         .header {
             text-align: center;
-            border-bottom: 2px solid #2c3e50;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
+            padding-bottom: 24px;
+            margin-bottom: 32px;
+            border-bottom: 1px solid #242424;
+            position: relative;
         }
         
-        .header h1 {
-            font-size: 24px;
-            color: #2c3e50;
-            margin: 0 0 5px 0;
-            font-weight: bold;
+        .header .logo {
+            font-size: 28px;
+            font-weight: 300;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+            margin: 0;
         }
         
-        .header .subtitle {
-            font-size: 14px;
-            color: #7f8c8d;
-            margin: 3px 0;
+        .header .logo span {
+            color: #5CB85C;
+            font-weight: 500;
         }
         
-        .header .period {
-            font-size: 13px;
-            color: #34495e;
-            margin: 3px 0;
-            font-weight: bold;
-        }
-        
-        .header .user-info {
+        .header .tagline {
             font-size: 12px;
-            color: #7f8c8d;
-            margin: 3px 0;
+            color: #6B7280;
+            margin: 2px 0 10px 0;
+            font-weight: 300;
+            letter-spacing: 1px;
         }
         
+        .header .divider {
+            width: 48px;
+            height: 2px;
+            background: #5CB85C;
+            margin: 10px auto 14px auto;
+            border-radius: 1px;
+        }
+        
+        .header .meta-grid {
+            display: table;
+            width: 100%;
+            max-width: 650px;
+            margin: 10px auto 0 auto;
+            border-collapse: collapse;
+        }
+        
+        .header .meta-grid .meta-item {
+            display: table-cell;
+            padding: 8px 12px;
+            text-align: center;
+            font-size: 11px;
+            color: #9A9A9A;
+            background: #111111;
+            border-radius: 8px;
+            border: 1px solid #242424;
+        }
+        
+        .header .meta-grid .meta-item .label {
+            font-weight: 500;
+            display: block;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #6B7280;
+            margin-bottom: 2px;
+        }
+        
+        .header .meta-grid .meta-item .value {
+            font-weight: 500;
+            font-size: 12px;
+            color: #ffffff;
+        }
+        
+        /* ===== SECTIONS ===== */
         .section {
-            margin-bottom: 25px;
+            margin-bottom: 30px;
             page-break-inside: avoid;
         }
         
         .section-title {
-            font-size: 16px;
-            font-weight: bold;
-            background-color: #f8f9fa;
-            padding: 8px 12px;
-            border-bottom: 2px solid #dee2e6;
-            margin-bottom: 12px;
-            color: #2c3e50;
+            font-size: 15px;
+            font-weight: 500;
+            color: #ffffff;
+            padding: 8px 0 10px 0;
+            border-bottom: 1px solid #242424;
+            margin-bottom: 16px;
+            letter-spacing: 0.3px;
         }
         
-        .section-title .icon {
+        .section-title .title-icon {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: #5CB85C;
+            color: #000000;
+            border-radius: 4px;
+            text-align: center;
+            line-height: 24px;
+            font-size: 12px;
             margin-right: 8px;
+            font-weight: 700;
         }
         
-        .grid-4 {
+        /* ===== STAT CARDS ===== */
+        .stats-grid {
             display: table;
             width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 10px;
+            border-collapse: separate;
+            border-spacing: 10px 0;
+            margin: -5px 0 10px -5px;
         }
         
-        .grid-3 {
-            display: table;
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 10px;
-        }
-        
-        .grid-2 {
-            display: table;
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 10px;
-        }
-        
-        .stat-card {
+        .stats-grid-4 .stat-card {
             display: table-cell;
-            background: #f8f9fa;
-            padding: 10px 12px;
-            border: 1px solid #dee2e6;
+            width: 25%;
+            padding: 14px 16px;
+            background: #111111;
+            border-radius: 10px;
+            border: 1px solid #242424;
             vertical-align: top;
         }
         
-        .grid-4 .stat-card {
-            width: 25%;
-        }
-        
-        .grid-3 .stat-card {
+        .stats-grid-3 .stat-card {
+            display: table-cell;
             width: 33.33%;
+            padding: 14px 16px;
+            background: #111111;
+            border-radius: 10px;
+            border: 1px solid #242424;
+            vertical-align: top;
         }
         
-        .grid-2 .stat-card {
+        .stats-grid-2 .stat-card {
+            display: table-cell;
             width: 50%;
+            padding: 14px 16px;
+            background: #111111;
+            border-radius: 10px;
+            border: 1px solid #242424;
+            vertical-align: top;
         }
         
-        .stat-label {
-            font-size: 11px;
-            color: #7f8c8d;
-            margin-bottom: 3px;
+        .stat-card .stat-label {
+            font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
+            color: #6B7280;
+            font-weight: 500;
+            margin-bottom: 4px;
         }
         
-        .stat-value {
-            font-size: 16px;
-            font-weight: bold;
+        .stat-card .stat-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #ffffff;
         }
         
-        .text-positive, .green {
-            color: #27ae60;
+        .stat-card .stat-value .currency {
+            font-size: 14px;
+            font-weight: 400;
+            color: #6B7280;
         }
         
-        .text-negative, .red {
-            color: #e74c3c;
-        }
+        /* ===== COLORS ===== */
+        .text-positive, .green { color: #5CB85C; }
+        .text-negative, .red { color: #FF5A5A; }
+        .text-neutral, .orange { color: #FFB74D; }
+        .blue { color: #3B82F6; }
+        .gray { color: #6B7280; }
         
-        .text-neutral, .orange {
-            color: #f39c12;
-        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .text-danger { color: #FF5A5A; }
+        .text-success { color: #5CB85C; }
+        .text-warning { color: #FFB74D; }
+        .font-bold { font-weight: 600; }
         
-        .blue {
-            color: #3498db;
-        }
-        
-        .gray {
-            color: #6b7280;
-        }
-        
-        .text-right {
-            text-align: right;
-        }
-        
-        .text-center {
-            text-align: center;
-        }
-        
-        .text-danger {
-            color: #e74c3c;
-        }
-        
-        .text-success {
-            color: #27ae60;
-        }
-        
-        .text-warning {
-            color: #f39c12;
-        }
-        
-        .font-bold {
-            font-weight: bold;
-        }
-        
+        /* ===== TABLE ===== */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
-        }
-        
-        table th {
-            background-color: #f8f9fa;
-            font-weight: bold;
-            text-align: left;
-            padding: 8px 10px;
-            border: 1px solid #dee2e6;
-            font-size: 11px;
-            color: #2c3e50;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        table td {
-            padding: 6px 10px;
-            border: 1px solid #dee2e6;
             font-size: 12px;
         }
         
-        table tr:nth-child(even) {
-            background-color: #fafafa;
+        table thead th {
+            background: #111111;
+            color: #9A9A9A;
+            font-weight: 500;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding: 10px 12px;
+            text-align: left;
+            border: 1px solid #242424;
+            border-bottom: 2px solid #242424;
         }
         
-        table tr:hover {
-            background-color: #f0f0f0;
+        table tbody td {
+            padding: 9px 12px;
+            border: 1px solid #242424;
+            vertical-align: middle;
+            color: #e5e7eb;
         }
         
-        .total-row {
-            font-weight: bold;
-            background-color: #f8f9fa !important;
+        table tbody tr:nth-child(even) {
+            background: #0a0a0a;
         }
         
-        .total-row td {
-            border-top: 2px solid #2c3e50;
+        table tbody tr:hover {
+            background: #1a1a1a;
         }
         
+        table tbody tr.total-row {
+            background: #111111 !important;
+            font-weight: 600;
+        }
+        
+        table tbody tr.total-row td {
+            border-top: 2px solid #5CB85C;
+            padding: 10px 12px;
+            color: #ffffff;
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid #242424;
+        }
+        
+        /* ===== BADGES ===== */
         .badge {
             display: inline-block;
-            padding: 2px 10px;
+            padding: 2px 12px;
             border-radius: 12px;
             font-size: 10px;
-            font-weight: bold;
+            font-weight: 500;
             text-align: center;
+            letter-spacing: 0.3px;
         }
         
         .badge-success, .badge-completed {
-            background: #d4edda;
-            color: #155724;
+            background: rgba(92, 184, 92, 0.15);
+            color: #5CB85C;
         }
         
         .badge-warning {
-            background: #fff3cd;
-            color: #856404;
+            background: rgba(255, 183, 77, 0.15);
+            color: #FFB74D;
         }
         
         .badge-danger {
-            background: #f8d7da;
-            color: #721c24;
+            background: rgba(255, 90, 90, 0.15);
+            color: #FF5A5A;
         }
         
         .badge-healthy {
-            background: #d4edda;
-            color: #155724;
+            background: rgba(92, 184, 92, 0.15);
+            color: #5CB85C;
         }
         
         .badge-in-progress {
-            background: #d1ecf1;
-            color: #0c5460;
+            background: rgba(59, 130, 246, 0.15);
+            color: #3B82F6;
         }
         
+        /* ===== COLOR DOT ===== */
         .color-dot {
             display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 3px;
-            margin-right: 5px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
             vertical-align: middle;
+            border: 1px solid rgba(255,255,255,0.05);
         }
         
-        .text-muted {
-            color: #7f8c8d;
-        }
-        
+        /* ===== CHART ===== */
         .chart-container {
-            padding: 15px 0;
+            padding: 10px 0 5px 0;
         }
         
         .chart-bars {
@@ -268,6 +307,7 @@
             justify-content: space-around;
             height: 200px;
             padding: 10px 0;
+            gap: 4px;
         }
         
         .chart-bar-item {
@@ -279,75 +319,168 @@
         }
         
         .chart-bar {
-            width: 30px;
+            width: 28px;
             min-height: 4px;
-            border-radius: 3px;
+            border-radius: 4px 4px 0 0;
             margin-top: auto;
             transition: height 0.3s ease;
+            background: #5CB85C;
         }
         
         .chart-bar-value {
             font-size: 10px;
-            color: #6b7280;
+            color: #6B7280;
             margin-bottom: 4px;
+            font-weight: 500;
         }
         
         .chart-bar-label {
-            font-size: 11px;
-            color: #6b7280;
+            font-size: 10px;
+            color: #6B7280;
             margin-top: 6px;
+            font-weight: 500;
+        }
+        
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 30px 20px;
+            color: #6B7280;
+            background: #111111;
+            border-radius: 10px;
+            border: 1px dashed #242424;
+        }
+        
+        .empty-state .empty-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #6B7280;
+        }
+        
+        .empty-state .empty-text {
+            font-size: 13px;
+            color: #9A9A9A;
+        }
+        
+        /* ===== FOOTER ===== */
+        .footer {
+            margin-top: 30px;
+            padding-top: 24px;
+            border-top: 1px solid #242424;
+            text-align: center;
+        }
+        
+        .footer .footer-brand {
+            font-weight: 500;
+            font-size: 14px;
+            color: #ffffff;
+            letter-spacing: 0.3px;
+        }
+        
+        .footer .footer-brand span {
+            color: #5CB85C;
             font-weight: 600;
         }
         
-        .footer {
-            text-align: center;
-            font-size: 10px;
-            color: #7f8c8d;
-            border-top: 1px solid #dee2e6;
-            padding-top: 15px;
-            margin-top: 30px;
+        .footer .footer-divider {
+            width: 32px;
+            height: 2px;
+            background: #242424;
+            margin: 8px auto;
+            border-radius: 1px;
         }
         
+        .footer .footer-text {
+            font-size: 10px;
+            color: #6B7280;
+            margin-top: 4px;
+            line-height: 1.8;
+        }
+        
+        .footer .footer-text .highlight {
+            color: #9A9A9A;
+        }
+        
+        /* ===== PRINT ===== */
         @media print {
-            body {
-                padding: 10px;
+            body { 
+                padding: 15px; 
+                background: #000000;
+                color: #e5e7eb;
             }
-            .stat-card {
-                background: #f8f9fa !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+            .stat-card { 
+                background: #111111 !important; 
+                border-color: #242424 !important;
             }
-            .badge {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+            .badge, .color-dot, .chart-bar { 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
             }
-            .color-dot {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+            .section { page-break-inside: avoid; }
+            table thead th { 
+                background: #111111 !important; 
+                border-color: #242424 !important;
             }
-            .chart-bar {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+            table tbody td { border-color: #242424 !important; }
+            .header .meta-grid .meta-item {
+                background: #111111 !important;
+                border-color: #242424 !important;
             }
+            .table-wrapper { border-color: #242424 !important; }
+        }
+        
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .stats-grid-4 .stat-card,
+            .stats-grid-3 .stat-card,
+            .stats-grid-2 .stat-card {
+                display: block;
+                width: 100%;
+                margin-bottom: 8px;
+            }
+            .header .meta-grid .meta-item {
+                display: block;
+                width: 100%;
+                padding: 4px 0;
+            }
+            .chart-bar { width: 20px; }
         }
     </style>
 </head>
 <body>
+    {{-- Header --}}
     <div class="header">
-        <h1>LedgerLeaf Financial Report</h1>
-        <p class="subtitle">Generated on: {{ $generated_at ?? now()->format('F j, Y g:i A') }}</p>
-        <p class="period">Period: {{ $period['start'] ?? '' }} - {{ $period['end'] ?? '' }}</p>
-        <p class="user-info">User: {{ $user->name ?? '' }} ({{ $user->email ?? '' }})</p>
+        <h1 class="logo">Ledger<span>Leaf</span></h1>
+        <p class="tagline">Smart Budgeting Made Simple</p>
+        <div class="divider"></div>
+        
+        <div class="meta-grid">
+            <div class="meta-item">
+                <span class="label">Generated</span>
+                <span class="value">{{ $generated_at ?? now()->format('F j, Y g:i A') }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="label">Period</span>
+                <span class="value">{{ $period['start'] ?? '' }} - {{ $period['end'] ?? '' }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="label">Report For</span>
+                <span class="value">{{ $user->name ?? 'User' }}</span>
+            </div>
+        </div>
     </div>
 
+    {{-- Content --}}
     @yield('content')
 
+    {{-- Footer --}}
     <div class="footer">
-        <p>Generated by LedgerLeaf Financial Management System</p>
-        <p style="font-size: 9px; color: #adb5bd; margin-top: 5px;">
-            This report is automatically generated and contains sensitive financial information.
-            Please handle with care.
-        </p>
+        <div class="footer-brand">Ledger<span>Leaf</span></div>
+        <div class="footer-divider"></div>
+        <div class="footer-text">
+            This report is automatically generated and contains sensitive financial information.<br>
+            <span class="highlight">Confidential &bull; For authorized use only</span>
+        </div>
     </div>
 </body>
 </html>

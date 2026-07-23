@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast, Toaster } from 'react-hot-toast';
 import { Icon } from '@iconify/react';
 
@@ -8,7 +8,86 @@ interface ToastProps {
     duration?: number;
 }
 
-export const showToast = ({ message, type = 'success', duration = 4000 }: ToastProps) => {
+// Toast Content Component - This is where hooks are used
+const ToastContent: React.FC<{
+    message: string;
+    style: any;
+    t: any;
+    duration: number;
+}> = ({ message, style, t, duration }) => {
+    const [progress, setProgress] = useState(100);
+
+    useEffect(() => {
+        if (!t.visible) return;
+        
+        const startTime = Date.now();
+        const totalDuration = duration || 5000;
+        
+        const interval = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const remaining = Math.max(0, 100 - (elapsed / totalDuration) * 100);
+            setProgress(remaining);
+            
+            if (remaining <= 0) {
+                clearInterval(interval);
+                toast.dismiss(t.id);
+            }
+        }, 50);
+
+        return () => clearInterval(interval);
+    }, [t.visible, t.id, duration]);
+
+    return (
+        <div
+            className={`${
+                t.visible ? 'animate-slideIn' : 'animate-slideOut'
+            } max-w-md w-full bg-[#1A1A1A] backdrop-blur-xl border rounded-2xl shadow-2xl pointer-events-auto overflow-hidden`}
+            style={{
+                borderColor: style.border,
+                boxShadow: style.glow,
+                background: 'rgba(26, 26, 26, 0.95)',
+            }}
+            role="alert"
+            aria-live="polite"
+        >
+            <div className="flex items-center gap-4 p-5">
+                <div
+                    className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center shadow-lg"
+                    style={{ backgroundColor: style.bg }}
+                >
+                    <Icon
+                        icon={style.icon}
+                        className="w-6 h-6"
+                        style={{ color: style.color }}
+                    />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white leading-relaxed tracking-wide">
+                        {message}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-[10px] text-[#6B7280] font-mono tracking-wider">
+                            {Math.ceil(progress / 20)}s
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div 
+                className="h-1 transition-all duration-100 ease-linear"
+                style={{
+                    width: `${progress}%`,
+                    backgroundColor: style.color,
+                    opacity: progress > 0 ? 1 : 0,
+                }}
+            />
+        </div>
+    );
+};
+
+export const showToast = ({ message, type = 'success', duration = 5000 }: ToastProps) => {
     const styles = {
         success: {
             icon: 'mdi:check-circle',
@@ -48,56 +127,12 @@ export const showToast = ({ message, type = 'success', duration = 4000 }: ToastP
 
     toast.custom(
         (t) => (
-            <div
-                className={`${
-                    t.visible ? 'animate-slideIn' : 'animate-slideOut'
-                } max-w-md w-full bg-[#1A1A1A] backdrop-blur-xl border rounded-2xl shadow-2xl pointer-events-auto flex items-center gap-4 p-5 transition-all duration-300`}
-                style={{
-                    borderColor: style.border,
-                    boxShadow: style.glow,
-                    background: 'rgba(26, 26, 26, 0.95)',
-                }}
-            >
-                <div
-                    className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center shadow-lg"
-                    style={{ backgroundColor: style.bg }}
-                >
-                    <Icon
-                        icon={style.icon}
-                        className="w-6 h-6"
-                        style={{ color: style.color }}
-                    />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white leading-relaxed tracking-wide">
-                        {message}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1.5">
-                        <div
-                            className="h-0.5 rounded-full transition-all duration-500"
-                            style={{ 
-                                backgroundColor: style.color,
-                                width: '60px',
-                            }}
-                        />
-                        <span className="text-[10px] text-[#6B7280] font-mono tracking-wider">
-                            JUST NOW
-                        </span>
-                    </div>
-                </div>
-
-                {/* Close button - fixed version */}
-                <button
-                    onClick={() => toast.dismiss(t.id)}
-                    className="flex-shrink-0 w-7 h-7 rounded-lg hover:bg-white/5 flex items-center justify-center transition-all duration-200 group"
-                >
-                    <Icon
-                        icon="mdi:close"
-                        className="w-4 h-4 text-[#6B7280] group-hover:text-white transition-colors"
-                    />
-                </button>
-            </div>
+            <ToastContent
+                message={message}
+                style={style}
+                t={t}
+                duration={duration}
+            />
         ),
         {
             duration: duration,
@@ -118,7 +153,7 @@ export function ToastProvider() {
                     maxWidth: '100%',
                 },
                 className: 'toast-container',
-                duration: 4000,
+                duration: 5000,
             }}
             containerStyle={{
                 top: 24,
@@ -130,16 +165,16 @@ export function ToastProvider() {
 
 // Helper functions
 export const toastSuccess = (message: string, duration?: number) =>
-    showToast({ message, type: 'success', duration: duration || 4000 });
+    showToast({ message, type: 'success', duration: duration || 5000 });
 
 export const toastError = (message: string, duration?: number) =>
-    showToast({ message, type: 'error', duration: duration || 4000 });
+    showToast({ message, type: 'error', duration: duration || 5000 });
 
 export const toastWarning = (message: string, duration?: number) =>
-    showToast({ message, type: 'warning', duration: duration || 4000 });
+    showToast({ message, type: 'warning', duration: duration || 5000 });
 
 export const toastInfo = (message: string, duration?: number) =>
-    showToast({ message, type: 'info', duration: duration || 4000 });
+    showToast({ message, type: 'info', duration: duration || 5000 });
 
 export const toastPromise = (
     promise: Promise<any>,

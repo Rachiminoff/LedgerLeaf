@@ -124,15 +124,30 @@ export default function NotificationsIndex({ notifications, unread_count, summar
 
     const hasNotifications = Object.keys(notifData).length > 0;
 
+    // Toggle mobile menu
+    const toggleMobileMenu = () => {
+        setIsMobileMenuOpen(!isMobileMenuOpen);
+    };
+
+    // Close mobile menu
+    const closeMobileMenu = () => {
+        setIsMobileMenuOpen(false);
+    };
+
     return (
         <>
             <Head title="Notifications | LedgerLeaf" />
             <div className="min-h-screen bg-[#000000]">
-                <Sidebar activePage="notifications" onLogout={handleLogout} />
+                <Sidebar 
+                    activePage="notifications" 
+                    onLogout={handleLogout}
+                    isMobileOpen={isMobileMenuOpen}
+                    onMobileClose={closeMobileMenu}
+                />
                 <div className="lg:ml-[280px] min-h-screen">
                     <TopNav
                         title="Notifications"
-                        onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        onMenuToggle={toggleMobileMenu}
                         notificationCount={unreadCount}
                     />
                     <main className="p-4 sm:p-6 lg:p-8">
