@@ -1,6 +1,6 @@
 {
   "applicationName": "LedgerLeaf",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "developer": "Rachiminoff",
   "description": "LedgerLeaf is a modern full-stack personal finance management application built around a pocket-based budgeting philosophy. Designed for both desktop and mobile devices, it helps users organize their finances through budgeting pockets, expense tracking, savings management, and insightful financial analytics.",
   "project": {
