@@ -25,7 +25,7 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0
 
 ---
 
-## [1.0.0] - 2026-07-24
+## [1.0.0] - 2026-07-20
 
 ### 🎉 Initial Release
 
