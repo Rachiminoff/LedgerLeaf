@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { router } from '@inertiajs/react';
+import { LogoutModal } from '@/Components/ui/LogoutModal';
 
 interface SidebarProps {
   activePage: string;
@@ -25,6 +26,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onMobileClose 
 }) => {
   const [isOpen, setIsOpen] = useState(isMobileOpen);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     setIsOpen(isMobileOpen);
@@ -44,23 +46,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     router.visit(routes[page] || `/${page}`);
     
-    // Close mobile sidebar after navigation
     if (onMobileClose) {
       onMobileClose();
     }
   };
 
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutModal(false);
     if (onLogout) {
       onLogout();
     } else {
-      if (confirm('Are you sure you want to log out?')) {
-        router.post('/logout');
-      }
+      router.post('/logout');
     }
     if (onMobileClose) {
       onMobileClose();
     }
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutModal(false);
   };
 
   const sidebarContent = (
@@ -105,7 +113,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span>Help Center</span>
         </button>
         <button
-          onClick={handleLogout}
+          onClick={handleLogoutClick}
           className="w-full flex items-center gap-3 px-3 sm:px-4 py-2.5 rounded-xl transition-all duration-200 text-sm font-light text-[#9A9A9A] hover:text-[#FF5A5A] hover:bg-[#FF5A5A]/10 min-h-[44px]"
         >
           <Icon icon="mdi:logout" className="h-5 w-5 flex-shrink-0" />
@@ -138,6 +146,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       >
         {sidebarContent}
       </aside>
+
+      {/* Logout Modal */}
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onClose={handleCancelLogout}
+        onConfirm={handleConfirmLogout}
+      />
     </>
   );
 };
