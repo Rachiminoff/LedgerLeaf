@@ -25,7 +25,7 @@ class AddFundsController extends Controller
         ];
 
         $recentDeposits = Transaction::where('user_id', $user->id)
-            ->where('type', 'income')  // ✅ Changed from 'deposit' to 'income'
+            ->where('type', 'income') 
             ->latest()
             ->limit(5)
             ->get()
@@ -69,11 +69,11 @@ class AddFundsController extends Controller
             $oldSafeBalance = $user->safe_balance ?? 0;
             $oldTotalBalance = $user->total_balance ?? 0;
 
-            // ✅ Create transaction record with type 'income'
+            // Create transaction record with type 'income'
             Transaction::create([
                 'user_id' => $user->id,
                 'amount' => $amount,
-                'type' => 'income',  // ✅ Changed from 'deposit' to 'income'
+                'type' => 'income',  
                 'description' => $request->description ?? 'Fund deposit',
                 'date' => $request->date,
             ]);

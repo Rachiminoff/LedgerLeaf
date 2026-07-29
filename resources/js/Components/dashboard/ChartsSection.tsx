@@ -13,16 +13,22 @@ interface ChartsSectionProps {
   className?: string
 }
 
+interface MonthlyDataItem {
+  month: string
+  amount: number
+}
+
 export const ChartsSection: React.FC<ChartsSectionProps> = ({ className = '' }) => {
   const pieChartRef = useRef<any>(null)
   const [loading, setLoading] = React.useState(true)
   const [safeBalance, setSafeBalance] = React.useState(0)
   const [totalAllocated, setTotalAllocated] = React.useState(0)
-  const [monthlyData, setMonthlyData] = React.useState<{ month: string; amount: number }[]>([])
+  const [monthlyData, setMonthlyData] = React.useState<MonthlyDataItem[]>([])
   const [pocketDistribution, setPocketDistribution] = React.useState<{ name: string; amount: number; color: string }[]>([])
   
   const { props } = usePage()
-  const monthlySpendingData = props.monthlySpendingData || []
+  // Cast monthlySpendingData to array with proper typing
+  const monthlySpendingData = (props.monthlySpendingData as MonthlyDataItem[]) || []
   const { summary, fetchBudgetData } = useBudget()
   const { pockets, fetchPockets } = usePockets()
 
@@ -52,7 +58,7 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ className = '' }) 
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     const currentMonth = new Date().getMonth()
     
-    const fallbackData = months.map((month, index) => {
+    const fallbackData: MonthlyDataItem[] = months.map((month, index) => {
       if (index > currentMonth) {
         return { month, amount: 0 }
       }

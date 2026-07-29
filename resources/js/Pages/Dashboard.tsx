@@ -242,15 +242,11 @@ const Dashboard: React.FC = () => {
               onViewTransactions={() => router.visit('/transactions')}
             />
 
-            {/* Stats Grid - Uses real data */}
+            {/* Stats Grid*/}
             <StatsGrid stats={statsData} loading={loading} />
 
-            {/* Charts Section - Uses real data */}
-            <ChartsSection
-              spendingData={spendingData}
-              monthlyData={monthlyData}
-              savingsData={savingsData}
-            />
+            {/* Charts Section*/}
+            <ChartsSection />
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
