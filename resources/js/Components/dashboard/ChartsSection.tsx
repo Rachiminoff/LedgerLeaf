@@ -11,9 +11,6 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarEle
 
 interface ChartsSectionProps {
   className?: string
-  spendingData?: { labels: string[]; values: number[]; colors: string[] }
-  monthlyData?: { labels: string[]; values: number[] }
-  savingsData?: { labels: string[]; values: number[]; colors: string[] }
 }
 
 export const ChartsSection: React.FC<ChartsSectionProps> = ({ className = '' }) => {
@@ -24,7 +21,8 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ className = '' }) 
   const [monthlyData, setMonthlyData] = React.useState<{ month: string; amount: number }[]>([])
   const [pocketDistribution, setPocketDistribution] = React.useState<{ name: string; amount: number; color: string }[]>([])
   
-  const { auth } = usePage().props
+  const { props } = usePage()
+  const monthlySpendingData = props.monthlySpendingData || []
   const { summary, fetchBudgetData } = useBudget()
   const { pockets, fetchPockets } = usePockets()
 
@@ -33,11 +31,38 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ className = '' }) 
     const loadData = async () => {
       setLoading(true)
       await Promise.all([fetchBudgetData(), fetchPockets()])
+      
+      // Use monthlySpendingData from controller
+      if (monthlySpendingData && monthlySpendingData.length > 0) {
+        console.log('Monthly spending data from controller:', monthlySpendingData)
+        setMonthlyData(monthlySpendingData)
+      } else {
+        console.warn('No monthly spending data from controller, using fallback')
+        generateFallbackMonthlyData()
+      }
+      
       setLoading(false)
     }
     loadData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Run only once on mount
+  }, [])
+
+  // Generate fallback monthly data
+  const generateFallbackMonthlyData = () => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const currentMonth = new Date().getMonth()
+    
+    const fallbackData = months.map((month, index) => {
+      if (index > currentMonth) {
+        return { month, amount: 0 }
+      }
+      return {
+        month,
+        amount: 0
+      }
+    })
+    setMonthlyData(fallbackData)
+  }
 
   // Update data when summary or pockets change
   useEffect(() => {
@@ -47,7 +72,6 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ className = '' }) 
     }
     
     if (pockets && pockets.length > 0) {
-      // Calculate pocket distribution
       const distribution = pockets
         .filter((p: any) => p.allocated > 0)
         .map((p: any) => ({
@@ -56,40 +80,11 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ className = '' }) 
           color: p.color || '#5CB85C',
         }))
         .sort((a: any, b: any) => b.amount - a.amount)
-        .slice(0, 6) // Show top 6 pockets
+        .slice(0, 6)
       
       setPocketDistribution(distribution)
-      
-      // Generate monthly data from actual transactions if available
-      // Otherwise use fallback data
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-      const currentMonth = new Date().getMonth()
-      
-      // Try to get actual monthly spending from transactions
-      // This assumes your pocket data has transaction history
-      // If not, fallback to empty data or use a more realistic pattern
-      const monthlyTrend = months.map((month, index) => {
-        // If we have transaction data, use it
-        // For now, using a more realistic pattern based on pocket spending
-        const monthSpending = pockets.reduce((sum: number, pocket: any) => {
-          // If pocket has monthly data, use it
-          // This is a placeholder - replace with actual transaction data
-          return sum + (pocket.monthly_spent?.[index] || 0)
-        }, 0)
-        
-        // Fallback: use a percentage of allocated based on current month
-        const fallbackAmount = index <= currentMonth 
-          ? Math.max(0, (totalAllocated / (currentMonth + 1)) * (0.5 + Math.random() * 0.5))
-          : 0
-        
-        return {
-          month,
-          amount: monthSpending || fallbackAmount,
-        }
-      })
-      setMonthlyData(monthlyTrend)
     }
-  }, [summary, pockets, totalAllocated])
+  }, [summary, pockets])
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -102,8 +97,6 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ className = '' }) 
   }
 
   // ─── Total Balance vs Safe Balance Pie Chart ──────────────────
-  // This chart shows how much of your total balance is allocated to pockets
-  // vs how much is still safe to spend (unallocated)
   const balanceData = {
     labels: ['Allocated to Pockets', 'Safe Balance (Unallocated)'],
     datasets: [
@@ -309,7 +302,6 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ className = '' }) 
             <p className="text-xs text-[#6B7280] mt-1">Add funds to see your balance distribution</p>
           </div>
         )}
-        {/* Summary stats */}
         {hasAllocated && (
           <div className="mt-3 pt-3 border-t border-[#242424] grid grid-cols-2 gap-2">
             <div>
@@ -344,7 +336,6 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ className = '' }) 
             <p className="text-xs text-[#6B7280] mt-1">Create a pocket to see distribution</p>
           </div>
         )}
-        {/* Pocket count */}
         {hasPockets && (
           <div className="mt-3 pt-3 border-t border-[#242424] text-center">
             <p className="text-[10px] text-[#9A9A9A]">
@@ -384,7 +375,6 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ className = '' }) 
             options={barOptions}
           />
         </div>
-        {/* Total spending */}
         {hasMonthlyData && (
           <div className="mt-3 pt-3 border-t border-[#242424] text-center">
             <p className="text-[10px] text-[#9A9A9A]">

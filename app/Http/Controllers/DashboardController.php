@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use App\Models\Expense;
 use App\Models\Pocket;
 use App\Models\Budget;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -21,7 +23,7 @@ class DashboardController extends Controller
         $user->refresh();
 
         // Get data directly from database using raw queries
-        $safeBalance = \DB::table('users')
+        $safeBalance = DB::table('users')
             ->where('id', $user->id)
             ->value('safe_balance') ?? 0;
 
@@ -29,19 +31,19 @@ class DashboardController extends Controller
          * TOTAL BALANCE = Safe Balance + Allocated to Pockets
          * This is the total money the user has
          */
-        $totalBalance = \DB::table('users')
+        $totalBalance = DB::table('users')
             ->where('id', $user->id)
             ->value('total_balance') ?? 0;
 
         // If total_balance is 0, calculate from transactions
         if ($totalBalance == 0) {
-            $totalBalance = \DB::table('transactions')
+            $totalBalance = DB::table('transactions')
                 ->where('user_id', $user->id)
                 ->where('type', 'income')
                 ->sum('amount') ?? 0;
 
             // Update the user's total_balance
-            \DB::table('users')
+            DB::table('users')
                 ->where('id', $user->id)
                 ->update([
                     'total_balance' => $totalBalance,
@@ -60,10 +62,11 @@ class DashboardController extends Controller
         $spentFromPockets = $pockets->sum('spent') ?? 0;
         $remainingInPockets = $allocatedToPockets - $spentFromPockets;
 
-        // Monthly spending
-        $monthlySpending = Transaction::where('user_id', $user->id)
-            ->where('type', 'expense')
-            ->whereMonth('date', now()->month)
+        // Monthly spending - Use Expense model with proper date handling
+        $monthlySpending = Expense::where('user_id', $user->id)
+            ->where('is_archived', false)
+            ->whereYear('expense_date', now()->year)
+            ->whereMonth('expense_date', now()->month)
             ->sum('amount');
 
         // Active budgets
@@ -76,8 +79,8 @@ class DashboardController extends Controller
             ->where('status', 'pending')
             ->count();
 
-        // Recent activities
-        $recentActivities = Transaction::with(['category', 'budget', 'pocket'])
+        // Recent activities - Combine both Transactions and Expenses
+        $recentTransactions = Transaction::with(['category', 'budget', 'pocket'])
             ->where('user_id', $user->id)
             ->latest()
             ->limit(5)
@@ -94,17 +97,44 @@ class DashboardController extends Controller
                     'created_at' => $transaction->created_at,
                     'budget_name' => $transaction->budget?->name,
                     'pocket_name' => $transaction->pocket?->name,
+                    'source' => 'transaction',
                 ];
             });
 
-        // Get budget categories from the budget_categories table
-        // First, check if the budget_categories table exists
+        $recentExpenses = Expense::with(['category', 'pocket'])
+            ->where('user_id', $user->id)
+            ->where('is_archived', false)
+            ->latest('expense_date')
+            ->limit(5)
+            ->get()
+            ->map(function ($expense) {
+                return [
+                    'id' => $expense->id,
+                    'description' => $expense->description ?? $expense->merchant ?? 'Expense',
+                    'amount' => $expense->amount,
+                    'type' => 'expense',
+                    'category_name' => $expense->category?->name ?? 'Uncategorized',
+                    'category_icon' => $expense->category?->icon ?? 'mdi:circle',
+                    'date' => $expense->expense_date,
+                    'created_at' => $expense->created_at,
+                    'budget_name' => null,
+                    'pocket_name' => $expense->pocket?->name,
+                    'source' => 'expense',
+                ];
+            });
+
+        // Merge and sort recent activities
+        $recentActivities = $recentTransactions->concat($recentExpenses)
+            ->sortByDesc('created_at')
+            ->take(5)
+            ->values();
+
+        // Get budget categories
         $budgetCategories = [];
         
         try {
-            // Check if table exists
             if (\Schema::hasTable('budget_categories')) {
-                $budgetCategories = \DB::table('budget_categories')
+                $budgetCategories = DB::table('budget_categories')
                     ->join('categories', 'budget_categories.category_id', '=', 'categories.id')
                     ->join('budgets', 'budget_categories.budget_id', '=', 'budgets.id')
                     ->where('budgets.user_id', $user->id)
@@ -151,7 +181,7 @@ class DashboardController extends Controller
         }
 
         // Notifications
-        $notifications = \DB::table('notifications')
+        $notifications = DB::table('notifications')
             ->where('user_id', $user->id)
             ->latest()
             ->limit(5)
@@ -161,7 +191,7 @@ class DashboardController extends Controller
             });
 
         // Timeline
-        $timeline = \DB::table('audit_logs')
+        $timeline = DB::table('audit_logs')
             ->where('user_id', $user->id)
             ->latest()
             ->limit(5)
@@ -169,6 +199,60 @@ class DashboardController extends Controller
             ->map(function ($log) {
                 return (array) $log;
             });
+
+        // ─── MONTHLY SPENDING DATA ───────────────────────────────────
+        // Get all expenses for the user (for debugging)
+        $allExpenses = Expense::where('user_id', $user->id)
+            ->where('is_archived', false)
+            ->select('id', 'amount', 'expense_date', 'description')
+            ->orderBy('expense_date')
+            ->get();
+        
+        \Log::info('All user expenses:', $allExpenses->toArray());
+
+        // Get last 12 months of expense data with proper date handling
+        $monthlySpendingData = [];
+        
+        for ($i = 11; $i >= 0; $i--) {
+            $month = now()->subMonths($i);
+            $year = $month->year;
+            $monthNum = $month->month;
+            
+            // Get expenses for this specific month and year using raw query for reliability
+            $amount = Expense::where('user_id', $user->id)
+                ->where('is_archived', false)
+                ->whereYear('expense_date', $year)
+                ->whereMonth('expense_date', $monthNum)
+                ->sum('amount');
+            
+            // Debug log for each month
+            \Log::info('Monthly expense calculation:', [
+                'month' => $month->format('M Y'),
+                'year' => $year,
+                'month_num' => $monthNum,
+                'amount' => $amount,
+                'user_id' => $user->id,
+            ]);
+            
+            $monthlySpendingData[] = [
+                'month' => $month->format('M'),
+                'amount' => (float) ($amount ?? 0),
+            ];
+        }
+
+        // Get current month's expenses for verification
+        $currentMonthExpenses = Expense::where('user_id', $user->id)
+            ->where('is_archived', false)
+            ->whereYear('expense_date', now()->year)
+            ->whereMonth('expense_date', now()->month)
+            ->get();
+        
+        \Log::info('Current month expenses:', [
+            'month' => now()->format('M Y'),
+            'count' => $currentMonthExpenses->count(),
+            'total' => $currentMonthExpenses->sum('amount'),
+            'expenses' => $currentMonthExpenses->toArray(),
+        ]);
 
         // Build stats array
         $stats = [
@@ -180,7 +264,7 @@ class DashboardController extends Controller
             'pending_transactions' => (int) $pendingTransactions,
         ];
 
-        // Build budget summary (matches what BudgetController returns)
+        // Build budget summary
         $totalPockets = $pockets->count();
         $budgetHealth = $allocatedToPockets > 0 ? ($remainingInPockets / $allocatedToPockets) * 100 : 100;
 
@@ -202,10 +286,8 @@ class DashboardController extends Controller
             'allocated_to_pockets' => $allocatedToPockets,
             'spent_from_pockets' => $spentFromPockets,
             'total_pockets' => $totalPockets,
-            'pockets_count' => $pockets->count(),
-            'budget_categories_count' => count($budgetCategories),
-            'stats' => $stats,
-            'summary' => $summary,
+            'monthly_spending_data' => $monthlySpendingData,
+            'all_expenses_total' => Expense::where('user_id', $user->id)->where('is_archived', false)->sum('amount'),
         ]);
 
         return Inertia::render('Dashboard', [
@@ -219,6 +301,7 @@ class DashboardController extends Controller
             'notifications' => $notifications,
             'timeline' => $timeline,
             'insights' => $this->generateInsights($user),
+            'monthlySpendingData' => $monthlySpendingData,
         ]);
     }
 
@@ -255,7 +338,7 @@ class DashboardController extends Controller
         }
 
         // Safe balance insight
-        $safeBalance = \DB::table('users')
+        $safeBalance = DB::table('users')
             ->where('id', $user->id)
             ->value('safe_balance') ?? 0;
             
@@ -269,7 +352,7 @@ class DashboardController extends Controller
         }
 
         // Total balance insight
-        $totalBalance = \DB::table('users')
+        $totalBalance = DB::table('users')
             ->where('id', $user->id)
             ->value('total_balance') ?? 0;
 
