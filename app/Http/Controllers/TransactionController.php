@@ -6,6 +6,7 @@ use App\Models\Transaction;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
 
 class TransactionController extends Controller
 {
@@ -39,38 +40,60 @@ class TransactionController extends Controller
             $query = AuditLog::where('user_id', $user->id)
                 ->with(['user']);
 
-            // Apply filters
-            if ($request->filled('action')) {
-                $query->where('action', 'like', '%' . $request->action . '%');
-            }
-
-            if ($request->filled('table_name')) {
-                $query->where('table_name', $request->table_name);
-            }
-
+            // Apply search filter
             if ($request->filled('search')) {
                 $search = $request->search;
                 $query->where(function($q) use ($search) {
                     $q->where('action', 'like', '%' . $search . '%')
                       ->orWhere('table_name', 'like', '%' . $search . '%')
                       ->orWhere('old_values', 'like', '%' . $search . '%')
-                      ->orWhere('new_values', 'like', '%' . $search . '%');
+                      ->orWhere('new_values', 'like', '%' . $search . '%')
+                      ->orWhere('ip_address', 'like', '%' . $search . '%');
                 });
             }
 
+            // Apply action filter (exact match)
+            if ($request->filled('action')) {
+                $query->where('action', $request->action);
+            }
+
+            // Apply table_name filter
+            if ($request->filled('table_name')) {
+                $query->where('table_name', $request->table_name);
+            }
+
+            // Apply date range filter
             if ($request->filled('date_range')) {
                 $this->applyDateFilter($query, $request->date_range);
             }
 
             // Apply sorting
-            $sortBy = $request->sort_by ?? 'newest';
+            $sortBy = $request->input('sort_by', 'newest');
             $this->applySorting($query, $sortBy);
 
             $perPage = $request->input('per_page', 15);
             $transactions = $query->paginate($perPage);
 
-            // Format the data
-            $formattedData = $transactions->items();
+            // Format the data with readable action labels
+            $formattedData = collect($transactions->items())->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'action' => $log->action,
+                    'action_label' => $this->getActionLabel($log->action),
+                    'table_name' => $log->table_name,
+                    'table_label' => $this->getTableLabel($log->table_name),
+                    'old_values' => $log->old_values ? json_decode($log->old_values, true) : null,
+                    'new_values' => $log->new_values ? json_decode($log->new_values, true) : null,
+                    'ip_address' => $log->ip_address,
+                    'user_agent' => $log->user_agent,
+                    'created_at' => $log->created_at,
+                    'user' => $log->user ? [
+                        'id' => $log->user->id,
+                        'name' => $log->user->name,
+                        'email' => $log->user->email,
+                    ] : null,
+                ];
+            });
 
             // Get summary stats
             $summary = $this->getSummary($user);
@@ -86,6 +109,13 @@ class TransactionController extends Controller
                     'to' => $transactions->lastItem(),
                 ],
                 'summary' => $summary,
+                'filters' => [
+                    'search' => $request->search,
+                    'action' => $request->action,
+                    'table_name' => $request->table_name,
+                    'date_range' => $request->date_range,
+                    'sort_by' => $request->sort_by,
+                ],
             ]);
 
         } catch (\Exception $e) {
@@ -104,78 +134,116 @@ class TransactionController extends Controller
     {
         $total = AuditLog::where('user_id', $user->id)->count();
         
+        // Get count by action
         $byAction = AuditLog::where('user_id', $user->id)
             ->selectRaw('action, COUNT(*) as count')
             ->groupBy('action')
+            ->orderBy('count', 'desc')
             ->get()
             ->map(function ($item) {
                 return [
                     'action' => $item->action,
+                    'action_label' => $this->getActionLabel($item->action),
                     'count' => $item->count,
                 ];
             });
 
-        // Get action categories for better grouping
-        $actionCategories = $this->getActionCategories();
+        // Get count by table
+        $byTable = AuditLog::where('user_id', $user->id)
+            ->selectRaw('table_name, COUNT(*) as count')
+            ->groupBy('table_name')
+            ->orderBy('count', 'desc')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'table_name' => $item->table_name,
+                    'table_label' => $this->getTableLabel($item->table_name),
+                    'count' => $item->count,
+                ];
+            });
+
+        // Get today's activity
+        $today = AuditLog::where('user_id', $user->id)
+            ->whereDate('created_at', today())
+            ->count();
+
+        // Get this week's activity
+        $thisWeek = AuditLog::where('user_id', $user->id)
+            ->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])
+            ->count();
+
+        // Get this month's activity
+        $thisMonth = AuditLog::where('user_id', $user->id)
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count();
 
         return [
             'total' => $total,
+            'today' => $today,
+            'this_week' => $thisWeek,
+            'this_month' => $thisMonth,
             'by_action' => $byAction,
-            'categories' => $actionCategories,
+            'by_table' => $byTable,
         ];
     }
 
     /**
-     * Get action categories for filtering
+     * Get human-readable action label
      */
-    private function getActionCategories()
+    private function getActionLabel($action)
     {
-        return [
-            'pocket' => [
-                'label' => 'Pocket Actions',
-                'actions' => [
-                    'create_pocket',
-                    'update_pocket',
-                    'archive_pocket',
-                    'delete_pocket',
-                    'restore_pocket',
-                    'refund_pocket',
-                    'allocate_funds',
-                    'transfer_funds',
-                    'deduct_pocket',
-                ],
-            ],
-            'expense' => [
-                'label' => 'Expense Actions',
-                'actions' => [
-                    'create_expense',
-                    'update_expense',
-                    'delete_expense',
-                    'archive_expense',
-                    'restore_expense',
-                ],
-            ],
-            'savings' => [
-                'label' => 'Savings Actions',
-                'actions' => [
-                    'create_savings_goal',
-                    'update_savings_goal',
-                    'archive_savings_goal',
-                    'restore_savings_goal',
-                    'delete_savings_goal',
-                    'deposit_savings',
-                    'withdraw_savings',
-                ],
-            ],
-            'account' => [
-                'label' => 'Account Actions',
-                'actions' => [
-                    'deposit',
-                    'update_profile',
-                    'change_password',
-                ],
-            ],
+        $labels = [
+            'deposit' => 'Deposit',
+            'create_pocket' => 'Create Pocket',
+            'update_pocket' => 'Update Pocket',
+            'archive_pocket' => 'Archive Pocket',
+            'delete_pocket' => 'Delete Pocket',
+            'restore_pocket' => 'Restore Pocket',
+            'refund_pocket' => 'Refund Pocket',
+            'allocate_funds' => 'Allocate Funds',
+            'transfer_funds' => 'Transfer Funds',
+            'deduct_pocket' => 'Deduct from Pocket',
+            'create_expense' => 'Create Expense',
+            'update_expense' => 'Update Expense',
+            'delete_expense' => 'Delete Expense',
+            'archive_expense' => 'Archive Expense',
+            'restore_expense' => 'Restore Expense',
+            'create_savings_goal' => 'Create Savings Goal',
+            'update_savings_goal' => 'Update Savings Goal',
+            'archive_savings_goal' => 'Archive Savings Goal',
+            'restore_savings_goal' => 'Restore Savings Goal',
+            'delete_savings_goal' => 'Delete Savings Goal',
+            'deposit_savings' => 'Deposit to Savings',
+            'withdraw_savings' => 'Withdraw from Savings',
+            'update_profile' => 'Update Profile',
+            'change_password' => 'Change Password',
+            'login' => 'Login',
+            'logout' => 'Logout',
         ];
+
+        return $labels[$action] ?? ucwords(str_replace('_', ' ', $action));
+    }
+
+    /**
+     * Get human-readable table label
+     */
+    private function getTableLabel($table)
+    {
+        $labels = [
+            'users' => 'Users',
+            'pockets' => 'Pockets',
+            'expenses' => 'Expenses',
+            'transactions' => 'Transactions',
+            'allocations' => 'Allocations',
+            'savings_goals' => 'Savings Goals',
+            'savings_deposits' => 'Savings Deposits',
+            'savings_withdrawals' => 'Savings Withdrawals',
+            'budgets' => 'Budgets',
+            'categories' => 'Categories',
+        ];
+
+        return $labels[$table] ?? ucwords(str_replace('_', ' ', $table));
     }
 
     /**
@@ -198,8 +266,8 @@ class TransactionController extends Controller
                 $query->whereDate('created_at', '>=', now()->subMonths(3));
                 break;
             default:
-                $query->whereMonth('created_at', now()->month)
-                    ->whereYear('created_at', now()->year);
+                // No date filter
+                break;
         }
     }
 
